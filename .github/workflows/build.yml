@@ -53,10 +53,9 @@ jobs:
           cd unpack
           source .venv/bin/activate
           mkdir -p downloader/resdata
-          cp gf-data-ch/resdata_no_hash.json downloader/resdata/ch_resdata.json
           cd downloader
+          sed -i 's/"ch"/"us"/' config.json5
           git apply ../downloader.patch
-          zip -j resdata.zip resdata/ch_resdata.json
           python downloader.py --downloadres 0 --abname
       - name: Cache Downloaded Resources
         uses: actions/cache/save@v4

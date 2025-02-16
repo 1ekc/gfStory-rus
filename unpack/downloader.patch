@@ -1,7 +1,27 @@
 diff --git a/downloader.py b/downloader.py
-index 663194b..7879b7d 100644
+index 663194b..fb0e94d 100644
 --- a/downloader.py
 +++ b/downloader.py
+@@ -11,8 +11,8 @@ from logger_tt import logger, setup_logging
+ os.chdir(Path(__file__).resolve().parent)
+ 
+ 
+-def setup_mp_logging():
+-    setup_logging(config_path="logger_tt/log_config.json")
++# def setup_mp_logging():
++#     setup_logging(config_path="logger_tt/log_config.json")
+ 
+ 
+ def parse_args():
+@@ -100,7 +100,7 @@ def parse_args():
+ 
+ if __name__ == "__main__":
+     config = parse_args()
+-    setup_mp_logging()
++    # setup_mp_logging()
+     downloader = Downloader(
+         n_jobs=config["processes"], timeout=config["timeout"], retry=config["max_retry"]
+     )
 @@ -140,6 +140,20 @@ if __name__ == "__main__":
              res_path = os.path.join(
                  out_dir, abname if config["use_abname"] else resname
