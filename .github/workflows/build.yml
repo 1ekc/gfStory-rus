@@ -55,6 +55,8 @@ jobs:
           mkdir -p downloader/resdata
           cd downloader
           sed -i 's/"ch"/"us"/' config.json5
+          wget https://github.com/gf-data-tools/gf-resource-downloader/releases/download/ResData/resdata.zip
+          unzip resdata.zip -d resdata
           git apply ../downloader.patch
           python downloader.py --downloadres 0 --abname
       - name: Cache Downloaded Resources
