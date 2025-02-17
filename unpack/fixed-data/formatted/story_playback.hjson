@@ -240,6 +240,7 @@
     tag: EP.
     order: 27
   }
+  {
     id: 28
     story_campaign_id: "-54"
     name: Longitudinal Strain
