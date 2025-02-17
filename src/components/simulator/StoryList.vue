@@ -44,7 +44,7 @@ function generateLeafOption(
 ): MenuOption & TreeSelectOption {
   const description = '';
   if (typeof pair === 'string') {
-    return { key: pair, label: `阶段 ${i + 1}`, description };
+    return { key: pair, label: `Part ${i + 1}`, description };
   }
   return { key: pair[0], label: pair[1], description };
 }
@@ -67,7 +67,7 @@ function generateStoryOptions(chapter: Chapter) {
   });
   const ep = MAPPED_CHAPTERS.find((s) => chapter.name.startsWith(`${s} `));
   if (ep) {
-    stories.unshift(generateLeafOption([`map|${ep}`, '选关界面'], 0));
+stories.unshift(generateLeafOption([`map|${ep}`, 'Stage selection interface'], 0));
   }
   return stories;
 }
@@ -86,17 +86,17 @@ function generateChapterOption(label: ChapterType, name: string): MenuOption & T
 }
 
 const rawData: (MenuOption & TreeSelectOption)[] = [
-  generateChapterOption('main', '主线剧情'),
-  generateChapterOption('event', '小型活动'),
-  generateChapterOption('colab', '联动'),
-  generateChapterOption('upgrading', '心智升级'),
-  generateChapterOption('bonding', '格里芬往事'),
-  generateChapterOption('anniversary', '七周年周年庆'),
-  generateChapterOption('anniversary6', '六周年周年庆'),
-  generateChapterOption('anniversary5', '五周年周年庆'),
-  generateChapterOption('anniversary4', '四周年周年庆'),
-  generateChapterOption('help', '求救回信'),
-  generateChapterOption('skin', '皮肤故事'),
+  generateChapterOption('main', 'Main Story'),
+  generateChapterOption('event', 'Minor Events'),
+  generateChapterOption('colab', 'Collab Events'),
+  generateChapterOption('upgrading', 'Neural Upgrade'),
+  generateChapterOption('bonding', 'Griffin Memories'),
+  generateChapterOption('anniversary', '6th Anniversary'),
+  generateChapterOption('anniversary6', '4th Anniversary'),
+  generateChapterOption('anniversary5', '3rd Anniversary'),
+  generateChapterOption('anniversary4', '4th Anniversary \(CN\)'),
+  generateChapterOption('help', 'Letters \(CN)'),
+  generateChapterOption('skin', 'Skin Stories'),
 ];
 function filterOptions(
   options: (MenuOption & TreeSelectOption)[],
@@ -265,7 +265,7 @@ async function search() {
   <n-flex>
     <n-input
       v-model:value="filter"
-      placeholder="搜索"
+      placeholder="Search"
       clearable
       autosize
       :disabled="preventAutofocus"
@@ -277,14 +277,14 @@ async function search() {
     </n-input>
     <n-popover trigger="hover">
       <template #trigger>
-        <n-button @click="search()">全文搜索</n-button>
+        <n-button @click="search()">Full-text Search</n-button>
       </template>
-      <span>初始化会很~~卡~~</span>
+      <span>May take some time</span>
     </n-popover>
   </n-flex>
   <n-modal v-model:show="showMap" preset="card" size="huge">
     <template #header>
-      <span>剧情前后连接</span>
+      <span>Storyline Connections</span>
     </template>
     <story-chart :ep-name="chapterEp" v-model:value="chartSelected" />
   </n-modal>

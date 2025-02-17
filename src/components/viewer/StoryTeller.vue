@@ -149,7 +149,7 @@ function nextLine(option?: number) {
     }
     l = story.next();
   }
-  text.value = '<i>故事结束</i>';
+  text.value = '<i>End of story</i>';
   ended.value = true;
 }
 
@@ -224,16 +224,16 @@ onUnmounted(() => {
     :text-height="showingHistory ? 'calc(100vh - 6em - 24px)' : undefined"
   >
     <button v-if="menuButton" @click="emit('menu')">
-      <menu-filled></menu-filled><span>菜单</span>
+      <menu-filled></menu-filled><span>Menu</span>
     </button>
     <button v-if="textButton" @click="emit('text')">
-      <text-snippet-filled></text-snippet-filled><span>文本</span>
+      <text-snippet-filled></text-snippet-filled><span>Script</span>
     </button>
     <button @click="showHistory">
-      <history-filled></history-filled><span>回放</span>
+      <history-filled></history-filled><span>Log</span>
     </button>
     <button v-if="!ended" @click="auto = !auto" :class="{ toggled: auto }">
-      <play-arrow-filled></play-arrow-filled><span>自动</span>
+      <play-arrow-filled></play-arrow-filled><span>Auto</span>
     </button>
     <div class="auto-speed">
       <span v-if="auto">{{ autoSpeed }}</span>

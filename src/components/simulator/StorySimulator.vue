@@ -156,13 +156,13 @@ const showText = ref(false);
 }
 
 .plain-text .directive.audio::before {
-  content: "背景音乐：";
+  content: "BGM：";
 }
 .plain-text .directive.background::before {
-  content: "背景: ";
+  content: "Background: ";
 }
 .plain-text .directive.se::before {
-  content: "音效: ";
+  content: "SFX: ";
 }
 .plain-text .directive.audio::before,
 .plain-text .directive.background::before,
@@ -189,7 +189,7 @@ const showText = ref(false);
 }
 
 .plain-text > ul::before {
-  content: "选项：";
+  content: "Settings：";
   font-weight: bold;
   font-style: italic;
   margin-left: -2em;
@@ -199,12 +199,12 @@ const showText = ref(false);
   font-size: 0.8em;
 }
 .plain-text p > code:last-child::before {
-  content: "跳转至分支：";
+  content: "Jump to branch：";
   font-weight: bold;
   font-style: italic;
 }
 .plain-text p > code:first-child:not(:last-child)::before {
-  content: "分支：";
+  content: "Branches：";
   font-weight: bold;
   font-style: italic;
   margin-left: -2em;
