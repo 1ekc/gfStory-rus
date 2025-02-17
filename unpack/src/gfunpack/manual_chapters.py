@@ -497,13 +497,13 @@ def manually_process(chapters: dict[int, Chapter], id_mapping: dict[str, int], m
     # 佐贺
     c = chapters[id_mapping['-57']]
     specials = {
-        '源樱': ['请勿靠近！', '吉光片羽', '樱之蕊'],
-        '二阶堂咲': ['暴走电台！', '暴走回忆！', '暴走的毕业礼'],
-        '水野爱': ['雨间庭', '月见海', '闪耀之爱'],
-        '绀野纯子': ['共在异乡为异客', '明月何年初照人', '烟波相望各西东'],
-        '夕雾': ['时间旅人', '海之声', '直至太阳下山'],
-        '星川莉莉': ['完美陌生人', '王牌特工', '长日留痕'],
-        '山田多惠': ['奇妙夜游记', '赠礼者', '“请不要走”'],
+        'Sakura Minamoto': ['Keep Clear!', 'Precious Treasure', 'Heart of the Cherry Blossom'],
+        'Saki Nikaido': ['Rampaging Radio Show!', 'Rampaging Memories!', 'Rampage at the Graduation Ceremony'],
+        'Ai Mizuno': ['Pavilion in the Rain', 'Moonlit Ocean', 'Dazzling Love'],
+        'Junko Konno': ['Strangers in a Foreign Land', 'When Did the Moon Start Shining?', 'Drifting Apart in the Haze'],
+        'Yugiri': ['Traveler in Time', 'Sound of the Sea', 'Until the Sun Goes Down'],
+        'Lily Hoshikawa': ['Perfect Strangers', 'Top Secret Agent', 'The Remains of the Day'],
+        'Tae Yamada': ['Night-Time Fantasia', 'Gift Giver', '"Please Don\'t Go"'],
     }
     endings = [
         '笑与泪的夜',
@@ -766,9 +766,10 @@ def get_extra_stories(destination: pathlib.Path):
             request.urlretrieve(url, path)
 
 
+# TODO: find the right commits for the global anniversaries
 def get_extra_anniversary_stories(destination: pathlib.Path):
-    directory = pathlib.Path('GFLData', 'ch', 'text', 'avgtxt', 'anniversary')
-    old_directory = pathlib.Path('GirlsFrontlineData', 'zh-CN', 'asset_textes', 'avgtxt', 'anniversary')
+    directory = pathlib.Path('GFLData', 'en', 'text', 'avgtxt', 'anniversary')
+    old_directory = pathlib.Path('GirlsFrontlineData', 'en-US', 'asset_textes', 'avgtxt', 'anniversary')
     if not pathlib.Path('GFLData').is_dir():
         subprocess.run([
             'git', 'clone', 'https://github.com/randomqwerty/GFLData.git',
@@ -779,7 +780,7 @@ def get_extra_anniversary_stories(destination: pathlib.Path):
         ], stdout=subprocess.DEVNULL).check_returncode()
     if not destination.joinpath('anniversary4').is_dir():
         subprocess.run([
-            'git', 'checkout', '41793e107cb4697de10ac5bf507f1909f1c47030',
+            'git', 'checkout', 'd3c24706ac0fbc1984c55ffec0f1dafc688d9c8c',
         ], cwd='GirlsFrontlineData').check_returncode()
         shutil.copytree(old_directory, destination.joinpath('anniversary4'))
     if not destination.joinpath('anniversary5').is_dir():

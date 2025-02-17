@@ -53,11 +53,11 @@ jobs:
           cd unpack
           source .venv/bin/activate
           mkdir -p downloader/resdata
+          cp gf-data-us/resdata_no_hash.json downloader/resdata/us_resdata.json
           cd downloader
           sed -i 's/"ch"/"us"/' config.json5
-          wget https://github.com/gf-data-tools/gf-resource-downloader/releases/download/ResData/resdata.zip
-          unzip resdata.zip -d resdata
           git apply ../downloader.patch
+          zip -j resdata.zip resdata/us_resdata.json
           python downloader.py --downloadres 0 --abname
       - name: Cache Downloaded Resources
         uses: actions/cache/save@v4
@@ -75,6 +75,7 @@ jobs:
       - name: Unpack images
         run: |
           cd unpack
+          cp -r fixed-data/* gf-data-us
           source .venv/bin/activate
           python tests/test_backgrounds.py
           python tests/test_characters.py
