@@ -22,7 +22,9 @@
   }
   {
     id: -23
+    name: Romy
     code: NPC-Romy
+    title: Romy
     ai: 9999
   }
   {
