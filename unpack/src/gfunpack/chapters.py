@@ -178,8 +178,8 @@ class Chapters:
         else:
             auto_id += 10000 + (-campaign)
         return auto_id, Chapter(
-            name=f'未知: {title}',
-            description='未能解析活动名称',
+            name=f'Unkown: {title}',
+            description='Unable to resolve event name',
             stories=[],
         )
 
@@ -195,18 +195,18 @@ class Chapters:
             if name.isdigit() and int(name) in self.guns:
                 i = int(name)
                 name = self.guns[i]['name']
-                t = '人形'
+                t = 'Dolls'
             elif name.startswith('-') and int(name) in self.npcs:
                 i = int(name)
                 name = self.npcs[i]['name']
-                t = '人类协助者'
+                t = 'Humans'
             elif name.startswith('s') and int(name[2:]) in self.sangvis:
                 i = int(name[2:])
                 name = self.sangvis[i]['name']
-                t = '协议同归'
+                t = 'Sangvis Ferri'
             else:
                 i = 0
-                t = '未知'
+                t = 'Unkown'
             if t not in categories:
                 categories[t] = []
             categories[t].append((i, path, name))
@@ -352,7 +352,7 @@ class Chapters:
                 files_with_info = []
                 for file in files:
                     if isinstance(file, str) and 'default_' in file:
-                        file = (file, '默认')
+                        file = (file, 'Default')
                     files_with_info.append(file)
                 story.files = files_with_info
         return chapters
@@ -398,8 +398,8 @@ class Chapters:
         all_files = set(all_file_list)
         others = set(self.stories.extracted.keys()) - all_files - get_block_list()
         self.all_chapters['event'].append(Chapter(
-            name='未能归类',
-            description='程序未能自动归类的故事',
+            name='Uncategorized',
+            description='Stories that were not able to be automatically categorized',
             stories=[
                 Story(name=file, description='', files=[file])
                 for file in sorted(others)
