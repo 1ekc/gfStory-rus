@@ -93,7 +93,7 @@ const showText = ref(false);
         v-model:show="showMenu" :width="Math.min(width * 0.8, 400)"
         placement="left" display-directive="show"
       >
-        <n-drawer-content title="剧情选择" :native-scrollbar="false">
+        <n-drawer-content title="Story Selection" :native-scrollbar="false">
           <story-list v-model:value="value" set-title-when-selected />
           <slot name="footer" id="footer">
             <p>
