@@ -9,7 +9,7 @@
   {
     id: 2
     story_campaign_id: "1"
-    name: Chapter 1
+    name: Awakening
     chapter: "1"
     type: 1
     tag: EP.
@@ -18,7 +18,7 @@
   {
     id: 3
     story_campaign_id: "2"
-    name: Chapter 2
+    name: Echo
     chapter: "2"
     type: 1
     tag: EP.
@@ -27,7 +27,7 @@
   {
     id: 4
     story_campaign_id: "3"
-    name: Chapter 3
+    name: Silence
     chapter: "3"
     type: 1
     tag: EP.
@@ -36,7 +36,7 @@
   {
     id: 5
     story_campaign_id: "4"
-    name: Chapter 4
+    name: Message
     chapter: "4"
     type: 1
     tag: EP.
@@ -45,7 +45,7 @@
   {
     id: 6
     story_campaign_id: "5"
-    name: Chapter 5
+    name: Kindling
     chapter: "5"
     type: 1
     tag: EP.
@@ -63,7 +63,7 @@
   {
     id: 8
     story_campaign_id: "6"
-    name: Chapter 6
+    name: Comet
     chapter: "6"
     type: 1
     tag: EP.
@@ -72,7 +72,7 @@
   {
     id: 9
     story_campaign_id: "7"
-    name: Chapter 7
+    name: Partner
     chapter: "7"
     type: 1
     tag: EP.
@@ -99,7 +99,7 @@
   {
     id: 12
     story_campaign_id: "8"
-    name: Chapter 8
+    name: Spark
     chapter: "8"
     type: 1
     tag: EP.
@@ -117,7 +117,7 @@
   {
     id: 14
     story_campaign_id: "9"
-    name: Chapter 9
+    name: Lost
     chapter: "9"
     type: 1
     tag: EP.
@@ -126,7 +126,7 @@
   {
     id: 15
     story_campaign_id: "10"
-    name: Chapter 10
+    name: Purgatory
     chapter: "10"
     type: 1
     tag: EP.
@@ -153,7 +153,7 @@
   {
     id: 18
     story_campaign_id: "11"
-    name: Chapter 11
+    name: The Hunt
     chapter: "11"
     type: 1
     tag: EP.
@@ -180,7 +180,7 @@
   {
     id: 21
     story_campaign_id: "12"
-    name: Chapter 12
+    name: Gasp
     chapter: "12"
     type: 1
     tag: EP.
@@ -198,7 +198,7 @@
   {
     id: 23
     story_campaign_id: "13"
-    name: Chapter 13
+    name: The Oblivione
     chapter: "13"
     type: 1
     tag: EP.
