@@ -338,8 +338,8 @@ class Chapters:
                     stories=[],
                 )
             chapters[gun_id].stories.append(Story(
-                name=f'阶段 {story.stage_id}',
-                description=self.guns[gun_id]['name'] + ' 心智升级',
+                name=f'Part {story.stage_id}',
+                description=self.guns[gun_id]['name'] + ' Neural Upgrade',
                 files=[f'memoir/{story.scripts}.txt'],
             ))
         return [v for _, v in sorted(chapters.items(), key=lambda e: e[0])]
@@ -366,13 +366,13 @@ class Chapters:
         for s in stories:
             if s.description.isdigit() and 2000 < int(s.description) < 2100:
                 events.append(s)
-            elif '联动内容' in s.description:
+            elif 'collab' in s.description:
                 colab.append(s)
             else:
                 main.append(s)
         events.sort(key=lambda e: int(e.description))
-        events.extend(filter(lambda e: e.name.startswith('未知: '), main))
-        main = list(filter(lambda e: not e.name.startswith('未知: '), main))
+        events.extend(filter(lambda e: e.name.startswith('Unkown: '), main))
+        main = list(filter(lambda e: not e.name.startswith('Unkown: '), main))
         fill_in_chapter_info(main, events)
         all_chapters['main'] = main
         all_chapters['event'] = events

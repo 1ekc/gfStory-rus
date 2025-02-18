@@ -188,22 +188,22 @@ def _extra_stories_gunslinger():
 
 _extra_chapters: list[tuple[str, str, str, list]] = [
     ('-42', 'Butterfly in a Cocoon', 'Halloween 2020', _extra_stories_cocoon()),
-    ('-50', 'Love Bakery', 'White Day 2022', []),
-    ('-52', 'Lycan Sanctuary', 'Summer 2022', []),
+    ('-50', 'Love Bakery', '2022', []),
+    ('-52', 'Lycan Sanctuary', '2022', []),
     ('-59', 'Maze Guess', '', []),
     ('-61', 'Lost in Thoughts', '', []),
     ('-62', 'Reloading!', '', []),
 
-    ('-8', 'Operation Rabbit Hunt', 'BlazBlue x Guilty Gear', []),
-    ('-14,-15', 'Only Master', 'Guns Girl Z', []),
-    ('-19,-20,-22', 'Glory', 'DJMAX RESPECT', []),
-    ('-32', 'Valhalla', 'VA-11 HALL-A', _extra_stories_va11()),
-    ('-38', 'Dream Theater', 'Gunslinger Girl', _extra_stories_gunslinger()),
-    ('-43', 'Bounty Feast', 'The Division', []),
-    ('-46', 'My Devil\'s Frontline', 'Jashin-chan Dropkick', []),
-    ('-57', 'The Glistening Bloom', 'Zombie Land Saga', []),
-    ('-64', 'Through the Looking-Glass', 'Ghost in the Shell: SAC_2045', _extra_stories_sac2045()),
-    ('-73', 'Lorenz Butterfly', 'Arena Breakout', []),
+    ('-8', 'Operation Rabbit Hunt', 'BlazBlue x Guilty Gear collab', []),
+    ('-14,-15', 'Only Master', 'Guns Girl Z collab', []),
+    ('-19,-20,-22', 'Glory', 'DJMAX RESPECT collab', []),
+    ('-32', 'Valhalla', 'VA-11 HALL-A collab', _extra_stories_va11()),
+    ('-38', 'Dream Theater', 'Gunslinger Girl collab', _extra_stories_gunslinger()),
+    ('-43', 'Bounty Feast', 'The Division collab', []),
+    ('-46', 'My Devil\'s Frontline', 'Jashin-chan Dropkick collab', []),
+    ('-57', 'The Glistening Bloom', 'Zombie Land Saga collab', []),
+    ('-64', 'Through the Looking-Glass', 'Ghost in the Shell: SAC_2045 collab', _extra_stories_sac2045()),
+    ('-73', 'Lorenz Butterfly', 'Arena Breakout collab', []),
 ]
 
 
