@@ -24,7 +24,7 @@ def _chapter_starting():
     return Chapter(
         name='Prologue',
         # description='首次进入游戏自动播放',
-        description=''
+        description='',
         stories=[
             Story(name=f'Section {i + 1}', description='',
                   files=[f'startavg/start{i}.txt'])
