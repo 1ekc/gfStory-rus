@@ -187,7 +187,7 @@ def _extra_stories_gunslinger():
 
 
 _extra_chapters: list[tuple[str, str, str, list]] = [
-    ('-42', 'Butterfly in a Cocoon', 'Halloween 2020', _extra_stories_cocoon()),
+    ('-42', 'Butterfly in a Cocoon', '2020', _extra_stories_cocoon()),
     ('-50', 'Love Bakery', '2022', []),
     ('-52', 'Lycan Sanctuary', '2022', []),
     ('-59', 'Maze Guess', '', []),
@@ -196,7 +196,7 @@ _extra_chapters: list[tuple[str, str, str, list]] = [
 
     ('-8', 'Operation Rabbit Hunt', 'BlazBlue x Guilty Gear collab', []),
     ('-14,-15', 'Only Master', 'Guns Girl Z collab', []),
-    ('-19,-20,-22', 'Glory', 'DJMAX RESPECT collab', []),
+    ('-19,-20,-22', 'Glory Day', 'DJMAX RESPECT collab', []),
     ('-32', 'Valhalla', 'VA-11 HALL-A collab', _extra_stories_va11()),
     ('-38', 'Dream Theater', 'Gunslinger Girl collab', _extra_stories_gunslinger()),
     ('-43', 'Bounty Feast', 'The Division collab', []),
