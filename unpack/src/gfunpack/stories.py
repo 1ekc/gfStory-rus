@@ -468,7 +468,7 @@ class Stories:
                 TextAsset,
                 o.read(),
             )
-            content: str = text.m_Script.tobytes().decode()
+            content: str = text.m_Script.tobytes().decode(errors='ignore')
             path = self.destination.joinpath(*name.split('/'))
             os.makedirs(path.parent, exist_ok=True)
             with path.open('w') as f:
