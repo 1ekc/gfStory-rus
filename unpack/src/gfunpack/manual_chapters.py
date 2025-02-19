@@ -541,7 +541,7 @@ def manually_process(chapters: dict[int, Chapter], id_mapping: dict[str, int], m
 def manual_naming(story: Story, campaign: int):
     if campaign == -43:  # 暗金潮命名有问题
         story.name, story.description = story.description, story.name
-        if story.description == '破茧时分':  # 这个是 -42 茧中蝶影的介绍，应该是复制错了
+        if story.description == 'Breaking the Cocoon':  # 这个是 -42 茧中蝶影的介绍，应该是复制错了
             story.description = ''
     if campaign == -38:  # 梦间剧，有问题
         story.name = story.description
