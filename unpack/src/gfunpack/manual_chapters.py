@@ -823,9 +823,4 @@ def fill_in_chapter_info(main: list[Chapter], events: list[Chapter]):
         13: 'The Oblivione',
     }
     for c in main:
-        if c.description.isdigit():
-            i = int(c.description)
-            if i in mapping:
-                c.description = mapping[i]
-            else:
-                c.description = ''
+        c.description = ''
