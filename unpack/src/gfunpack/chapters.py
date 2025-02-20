@@ -11,7 +11,7 @@ from gfunpack.manual_chapters import (
     Chapter, Story, add_extra_chapter_mappings,
     get_block_list, get_recorded_chapters, post_insert,
     is_manual_processed, manually_process, manual_naming,
-    fill_in_chapter_info,
+    chapter_difficulty, fill_in_chapter_info,
 )
 
 _logger = logging.getLogger('gfunpack.prefabs')
@@ -267,7 +267,7 @@ class Chapters:
                 continue
             info = Story(
                 name=files[0] if story.title == '' else story.title,
-                description=story.description,
+                description=chapter_difficulty(story.id, story.description),
                 files=typing.cast(list[str | tuple[str, str]], files),
             )
             manual_naming(info, story.campaign)

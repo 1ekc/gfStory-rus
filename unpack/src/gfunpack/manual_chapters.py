@@ -548,6 +548,31 @@ def manual_naming(story: Story, campaign: int):
         story.description = ''
 
 
+# Add the difficulty to the description of the main story chapters
+def chapter_difficulty(id: int, description: str):
+    normal_chapters = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 19, 20, 21, 22, 23, 24,
+                       33, 34, 35, 36, 37, 38, 47, 48, 49, 50, 51, 52, 57, 58,
+                       59, 60, 61, 62, 67,68, 69, 70, 71, 72, 81, 82, 83, 84, 85,
+                       86, 116, 117, 118, 119, 120, 121, 130, 131, 132, 133, 134,
+                       135, 140, 141, 142, 143, 144, 145, 170, 171, 172, 173, 174,
+                       175, 458, 459, 460, 461, 462, 463, 535, 536, 537, 538, 539, 540]
+    emergency_chapters = [11, 12, 13, 14, 25, 26, 27, 28, 39, 40, 41, 42, 53, 54, 55, 56,
+                          63, 64, 65, 66, 73, 74, 75, 76, 87, 88, 89, 90, 122, 123, 124,
+                          125, 136, 137, 138, 139, 146, 147, 148, 149, 176, 177, 178, 179,
+                          464, 465, 466, 467, 541, 542, 543, 544]
+    night_chapters = [15, 16, 17, 18, 29, 30, 31, 32, 43, 44, 45, 46, 77, 78, 79, 80,
+                      91, 92, 93, 94, 126, 127, 128, 129, 162, 163, 164, 165, 166, 167,
+                      168, 169, 361, 362, 363, 364, 450, 451, 452, 453]
+    if id in normal_chapters:
+        return 'Normal'
+    elif id in emergency_chapters:
+        return 'Emergency'
+    elif id in night_chapters:
+        return 'Night Battle'
+    else:
+        return description
+
+
 def _index_of_file(story: Story, file: str):
     for i, f in enumerate(story.files):
         if isinstance(f, str):
