@@ -18,7 +18,7 @@ mkdir -p downloader/resdata
 cp gf-data-us/resdata_no_hash.json downloader/resdata/us_resdata.json
 cd downloader
 sed -i 's/"ch"/"us"/' config.json5
-git apply ../downloader.patch || true
+git apply -q ../downloader.patch || true
 zip -j resdata.zip resdata/us_resdata.json
 python downloader.py --downloadres 0 --abname
 
@@ -30,6 +30,7 @@ python tests/test_characters.py
 
 echo -e "${h_open}Unpacking and converting audio files...${h_close}"
 python tests/test_audio.py
+reset -I
 
 echo -e "${h_open}Processing resources...${h_close}"
 python -m gfunpack downloader/output -o .
