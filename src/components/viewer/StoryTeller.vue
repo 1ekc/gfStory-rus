@@ -40,6 +40,8 @@ const auto = ref(false);
 const autoSpeed = ref(1);
 const options = ref<SelectLine['select']>([]);
 const history: [string, string][] = [];
+let startTime = 0;
+let lastBGM = '';
 
 function toText(s: string) {
   return s.trim().replace(/\\/g, '');
@@ -65,12 +67,23 @@ function updateClasses(classString: string) {
 }
 
 function updateAudio(audio: string) {
+  if (audio == '/audio/bgm/BGM_Pause.m4a' && backgroundMusic !== null) {
+    startTime = backgroundMusic.currentTime;
+  }
+  if (audio !== '/audio/bgm/BGM_Pause.m4a' && audio !== '/audio/bgm/BGM_UnPause.m4a') {
+    lastBGM = audio;
+  }
   if (backgroundMusic !== null) {
     backgroundMusic.pause();
     backgroundMusic = null;
   }
   if (audio !== '') {
-    backgroundMusic = new Audio(audio);
+    if (audio == '/audio/bgm/BGM_UnPause.m4a') {
+      backgroundMusic = new Audio(lastBGM);
+      backgroundMusic.currentTime = startTime;
+    } else {
+      backgroundMusic = new Audio(audio);
+    }
     backgroundMusic.loop = true;
     try {
       backgroundMusic.play();
@@ -206,23 +219,11 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <story-scene
-    :background-url="background"
-    :background-style="style"
-    :classes="classes"
-    :narrator-html="narratorHtml"
-    :sprites="sprites"
-    :remote="remote"
-    :text-html="text"
-    :pop-char-animation-interval="auto ? 42 / autoSpeed : 42"
-    :options="options"
-    @click="() => { auto = false; nextLine(); }"
-    @choose="(v) => nextLine(v)"
-    @animation-finished="scheduleAuto"
-    :loading="loading || preloading"
-    :history="showingHistory"
-    :text-height="showingHistory ? 'calc(100vh - 6em - 24px)' : undefined"
-  >
+  <story-scene :background-url="background" :background-style="style" :classes="classes" :narrator-html="narratorHtml"
+    :sprites="sprites" :remote="remote" :text-html="text" :pop-char-animation-interval="auto ? 42 / autoSpeed : 42"
+    :options="options" @click="() => { auto = false; nextLine(); }" @choose="(v) => nextLine(v)"
+    @animation-finished="scheduleAuto" :loading="loading || preloading" :history="showingHistory"
+    :text-height="showingHistory ? 'calc(100vh - 6em - 24px)' : undefined">
     <button v-if="menuButton" @click="emit('menu')">
       <menu-filled></menu-filled><span>Menu</span>
     </button>
@@ -253,18 +254,21 @@ onUnmounted(() => {
   align-items: center;
   opacity: 0.7;
 }
-.auto-speed > span::before {
+
+.auto-speed>span::before {
   content: "X";
   transform: scaleX(0.8);
   display: inline-block;
 }
-.auto-speed > span {
+
+.auto-speed>span {
   position: absolute;
   font-size: small;
   left: 0;
   top: -0.5em;
 }
-.auto-speed > input {
+
+.auto-speed>input {
   margin: 0;
 }
 </style>
@@ -272,10 +276,13 @@ onUnmounted(() => {
 <style scoped>
 /* https://css-tricks.com/styling-cross-browser-compatible-range-inputs-css/ */
 input[type=range] {
-  -webkit-appearance: none; /* Hides the slider so that custom slider can be made */
+  -webkit-appearance: none;
+  /* Hides the slider so that custom slider can be made */
   appearance: none;
-  width: 100%; /* Specific width is required for Firefox. */
-  background: transparent; /* Otherwise white in Chrome */
+  width: 100%;
+  /* Specific width is required for Firefox. */
+  background: transparent;
+  /* Otherwise white in Chrome */
 }
 
 input[type=range]::-webkit-slider-thumb {
@@ -310,7 +317,8 @@ input[type=range]::-webkit-slider-thumb {
   cursor: pointer;
   /* You need to specify a margin in Chrome, but in Firefox and IE it is automatic */
   margin-top: -14px;
-  box-shadow: 1px 1px 1px #000000, 0px 0px 1px #0d0d0d; /* Add cool effects to your sliders! */
+  box-shadow: 1px 1px 1px #000000, 0px 0px 1px #0d0d0d;
+  /* Add cool effects to your sliders! */
 }
 
 /* All the same stuff for Firefox */
@@ -360,10 +368,12 @@ input[type=range]::-ms-track {
   border-width: 16px 0;
   color: transparent;
 }
+
 input[type=range]::-ms-fill-lower {
   border: 0.2px solid white;
   border-radius: 2.6px;
 }
+
 input[type=range]::-ms-fill-upper {
   border: 0.2px solid white;
   border-radius: 2.6px;
