@@ -85,6 +85,7 @@ function updateAudio(audio: string) {
       backgroundMusic = new Audio(audio);
     }
     backgroundMusic.loop = true;
+    backgroundMusic.volume = 0.5;
     try {
       backgroundMusic.play();
     } catch (_) { /* empty */ }
@@ -94,6 +95,7 @@ function updateAudio(audio: string) {
 function playAudio(audio: string) {
   const sePlayer = new Audio(audio);
   sePlayer.loop = false;
+  sePlayer.volume = 0.5;
   try {
     sePlayer.play();
   } catch (_) { /* empty */ }
