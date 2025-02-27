@@ -256,7 +256,8 @@ _attached_stories_motor_race = [
 ]
 _attached_stories: list[tuple[str, str, str]] = [
     ('0-2-1.txt', '0-2-3round2.txt'),
-    ('-2-1-1.txt', '-2-1-4-point2207.txt'),
+    # This is just a copy of the last few lines of -2-1-1
+    #('-2-1-1.txt', '-2-1-4-point2207.txt'),
 
     # 焙炒爱意，白色庆典位点剧情
     ('-50-1-4.txt', '-50-3-1.txt', 'Wrong chocolate'),
@@ -775,6 +776,10 @@ def get_block_list():
             '-41-3-4-ex4point92396.txt',
             '-41-3-4-ex5point92254.txt',
             '-41-3-4-ex6point92335.txt',
+
+            # DJMAX collab
+            '-19-1-2.txt', # Same as -19-1-2first.txt
+            '-19-2-2.txt',
         ]
     )
 
