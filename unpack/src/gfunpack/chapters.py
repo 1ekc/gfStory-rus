@@ -425,9 +425,9 @@ class Chapters:
         all_chapters["bonding"] = self._categorize_bonding_stories()
         all_chapters["upgrading"] = self._categorize_upgrading_stories()
         all_chapters["anniversary"] = self._categorize_anniversary()
+        all_chapters["anniversary3"] = self._categorize_anniversary("anniversary3")
         all_chapters["anniversary4"] = self._categorize_anniversary("anniversary4")
         all_chapters["anniversary5"] = self._categorize_anniversary("anniversary5")
-        all_chapters["anniversary6"] = self._categorize_anniversary("anniversary6")
         all_chapters["help"] = self._categorize_help_letters()
         all_chapters["skin"] = self._categorize_skins()
         return all_chapters

@@ -67,7 +67,7 @@ function generateStoryOptions(chapter: Chapter) {
   });
   const ep = MAPPED_CHAPTERS.find((s) => chapter.name.startsWith(`${s} `));
   if (ep) {
-stories.unshift(generateLeafOption([`map|${ep}`, 'Stage selection interface'], 0));
+    stories.unshift(generateLeafOption([`map|${ep}`, 'Stage selection interface'], 0));
   }
   return stories;
 }
@@ -92,9 +92,9 @@ const rawData: (MenuOption & TreeSelectOption)[] = [
   generateChapterOption('upgrading', 'Neural Upgrade'),
   generateChapterOption('bonding', 'Griffin Memories'),
   generateChapterOption('anniversary', '6th Anniversary'),
-  generateChapterOption('anniversary6', '4th Anniversary'),
-  generateChapterOption('anniversary5', '3rd Anniversary'),
-  generateChapterOption('anniversary4', '4th Anniversary \(CN\)'),
+  generateChapterOption('anniversary5', '5th Anniversary'),
+  generateChapterOption('anniversary4', '4th Anniversary'),
+  generateChapterOption('anniversary3', '3rd Anniversary'),
   generateChapterOption('help', 'Letters \(CN)'),
   generateChapterOption('skin', 'Skin Stories'),
 ];
@@ -263,14 +263,8 @@ async function search() {
 
 <template>
   <n-flex>
-    <n-input
-      v-model:value="filter"
-      placeholder="Search"
-      clearable
-      autosize
-      :disabled="preventAutofocus"
-      style="flex: 1"
-    >
+    <n-input v-model:value="filter" placeholder="Search" clearable autosize :disabled="preventAutofocus"
+      style="flex: 1">
       <template #prefix>
         <n-icon :component="SearchFilled" />
       </template>
@@ -288,22 +282,12 @@ async function search() {
     </template>
     <story-chart :ep-name="chapterEp" v-model:value="chartSelected" />
   </n-modal>
-  <n-menu
-    ref="menu"
-    :options="data"
-    :value="value"
-    @update-value="selectItem"
-    :accordion="filter === '' || expandedKeys === undefined"
-    :expanded-keys="expandedKeys"
-    :root-indent="24"
-    :indent="12"
-    :render-label="(v) => renderLabel(v as MenuOption & TreeSelectOption)"
-  >
+  <n-menu ref="menu" :options="data" :value="value" @update-value="selectItem"
+    :accordion="filter === '' || expandedKeys === undefined" :expanded-keys="expandedKeys" :root-indent="24"
+    :indent="12" :render-label="(v) => renderLabel(v as MenuOption & TreeSelectOption)">
   </n-menu>
-  <n-modal
-    v-model:show="showSearch" preset="card" size="huge"
-    style="max-width: 90vw; max-height: 90vh; overflow-y: auto;"
-  >
+  <n-modal v-model:show="showSearch" preset="card" size="huge"
+    style="max-width: 90vw; max-height: 90vh; overflow-y: auto;">
     <n-spin v-if="!pagefind" />
     <ul class="search-results">
       <li v-for="result in searchResults" :key="result.raw_url" @click="selectItem(result.raw_url)">
@@ -317,15 +301,19 @@ async function search() {
 .search-results li {
   cursor: pointer;
 }
+
 .search-results li:hover {
   background-color: #222;
 }
+
 .search-results li span.title {
   font-size: 1.4em;
 }
+
 .search-results li p.excerpt {
   font-size: 0.9em;
 }
+
 .search-results li p.excerpt mark {
   text-decoration: underline;
 }

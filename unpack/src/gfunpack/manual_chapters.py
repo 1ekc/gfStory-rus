@@ -797,35 +797,35 @@ def get_extra_stories(destination: pathlib.Path):
             request.urlretrieve(url, path)
 
 
-# TODO: find the right commits for the global anniversaries
 def get_extra_anniversary_stories(destination: pathlib.Path):
     directory = pathlib.Path('GFLData', 'en', 'text', 'avgtxt', 'anniversary')
-    old_directory = pathlib.Path('GirlsFrontlineData', 'en-US', 'asset_textes', 'avgtxt', 'anniversary')
     if not pathlib.Path('GFLData').is_dir():
         subprocess.run([
             'git', 'clone', 'https://github.com/randomqwerty/GFLData.git',
         ], stdout=subprocess.DEVNULL).check_returncode()
-    if not pathlib.Path('GirlsFrontlineData').is_dir():
         subprocess.run([
-            'git', 'clone', 'https://github.com/Dimbreath/GirlsFrontlineData.git',
-        ], stdout=subprocess.DEVNULL).check_returncode()
-    if not destination.joinpath('anniversary4').is_dir():
-        subprocess.run([
-            'git', 'checkout', 'd3c24706ac0fbc1984c55ffec0f1dafc688d9c8c',
-        ], cwd='GirlsFrontlineData').check_returncode()
-        shutil.copytree(old_directory, destination.joinpath('anniversary4'))
-    if not destination.joinpath('anniversary5').is_dir():
+            'git', 'checkout', '3cfdc2c8b0922b18f2689c79aee3a35ef6379a99',
+        ], cwd='GFLData').check_returncode()
+    if not destination.joinpath('anniversary3').is_dir():
         subprocess.run([
             'git', 'checkout', '9d0dae0066ccf1bc9e32abf35401d5ef7eaf7746',
         ], cwd='GFLData').check_returncode()
-        shutil.copytree(directory, destination.joinpath('anniversary5'))
-    if not destination.joinpath('anniversary6').is_dir():
+        shutil.copytree(directory, destination.joinpath('anniversary3'))
+    if not destination.joinpath('anniversary4').is_dir():
         subprocess.run([
-            'git', 'checkout', '93e4c8dd9a236f57b6869cf5c88c93c1cc79255c',
+            'git', 'checkout', 'af8bfda4f9383d229e76dd57234b719e4bdd223e',
         ], cwd='GFLData').check_returncode()
-        shutil.copytree(directory, destination.joinpath('anniversary6'))
+        shutil.copytree(directory, destination.joinpath('anniversary4'))
+        dup = destination.joinpath('anniversary4/55-102686.txt')
+        if dup.is_file():
+            dup.unlink()
+    if not destination.joinpath('anniversary5').is_dir():
+        subprocess.run([
+            'git', 'checkout', '2ef576988ba9571636c51a87edd70561c3c31319',
+        ], cwd='GFLData').check_returncode()
+        shutil.copytree(directory, destination.joinpath('anniversary5'))
         # 四周年的残留？
-        dup = destination.joinpath('anniversary6/55-102686.txt')
+        dup = destination.joinpath('anniversary5/55-102686.txt')
         if dup.is_file():
             dup.unlink()
 
