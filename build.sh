@@ -5,7 +5,7 @@ h_open="\n\e[1;34m:: \e[1;97m"
 h_close="\e[0m"
 
 echo -e "${h_open_f}Pulling submodules...${h_close}"
-git pull --recurse-submodules
+git submodule foreach git pull origin main
 
 echo -e "${h_open}Setting up Python environment...${h_close}"
 cd unpack
