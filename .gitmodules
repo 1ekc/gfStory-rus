@@ -4,5 +4,5 @@
   ignore = dirty
 [submodule "unpack/gf-data-us"]
 	path = unpack/gf-data-us
-	url = https://github.com/gf-data-tools/gf-data-us
+	url = https://github.com/1ekc/gf-data-rus
   ignore = dirty

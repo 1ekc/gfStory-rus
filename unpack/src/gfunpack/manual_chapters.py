@@ -23,7 +23,7 @@ class Chapter:
 def _chapter_starting():
     return Chapter(
         name='Prologue',
-        # description='首次进入游戏自动播放',
+        # description='Автоигра при первом входе в игру',
         description='',
         stories=[
             Story(name=f'Section {i + 1}', description='',
