@@ -15,7 +15,7 @@ pip install -r downloader/requirements.txt
 
 echo -e "${h_open}Downloading resources...${h_close}"
 mkdir -p downloader/resdata
-cp gf-data-us/resdata_no_hash.json downloader/resdata/us_resdata.json
+cp gf-data-rus/resdata_no_hash.json downloader/resdata/us_resdata.json
 cd downloader
 sed -i 's/"ch"/"us"/' config.json5
 git apply -q ../downloader.patch || true
@@ -24,7 +24,7 @@ python downloader.py --downloadres 0 --abname
 
 echo -e "${h_open}Unpacking images...${h_close}"
 cd ..
-cp -r fixed-data/* gf-data-us
+cp -r fixed-data/* gf-data-rus
 python tests/test_backgrounds.py
 python tests/test_characters.py
 

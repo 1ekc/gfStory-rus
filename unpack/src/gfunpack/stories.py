@@ -436,7 +436,7 @@ class Stories:
             root.joinpath('images', 'backgrounds.json'),
             root.joinpath('images', 'characters.json'),
         )
-        self.gf_data_directory = root.joinpath('пgf-data-us') if gf_data_directory is None else pathlib.Path(gf_data_directory)
+        self.gf_data_directory = root.joinpath('gf-data-rus') if gf_data_directory is None else pathlib.Path(gf_data_directory)
         self.content_tags = set()
         self.effect_tags = set()
         self.missing_audio = { 'bgm': set(), 'se': set() }

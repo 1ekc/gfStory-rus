@@ -2,7 +2,7 @@ name: Build Documentation
 
 on:
   workflow_dispatch:
-
+  push:
 
 permissions:
   contents: write
@@ -53,7 +53,7 @@ jobs:
           cd unpack
           source .venv/bin/activate
           mkdir -p downloader/resdata
-          cp gf-data-us/resdata_no_hash.json downloader/resdata/us_resdata.json
+          cp gf-data-rus/resdata_no_hash.json downloader/resdata/us_resdata.json
           cd downloader
           sed -i 's/"ch"/"us"/' config.json5
           git apply ../downloader.patch
@@ -75,7 +75,7 @@ jobs:
       - name: Unpack images
         run: |
           cd unpack
-          cp -r fixed-data/* gf-data-us
+          cp -r fixed-data/* gf-data-rus
           source .venv/bin/activate
           python tests/test_backgrounds.py
           python tests/test_characters.py
