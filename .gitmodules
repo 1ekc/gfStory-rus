@@ -2,7 +2,7 @@
 	path = unpack/downloader
 	url = https://github.com/gf-data-tools/gf-resource-downloader
   ignore = dirty
-[submodule "unpack/gf-data-us"]
-	path = unpack/gf-data-us
+[submodule "unpack/gf-data-rus"]
+	path = unpack/gf-data-rus
 	url = https://github.com/1ekc/gf-data-rus
   ignore = dirty
