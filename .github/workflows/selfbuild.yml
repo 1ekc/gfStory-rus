@@ -47,6 +47,25 @@ jobs:
           git submodule foreach 'git lfs install'
           git submodule foreach 'git lfs pull --include="formatted"'
 
+      - name: Repair Submodule
+        if: steps.verify-submodule.outcome == 'failure'
+        run: |
+          # Полная переинициализация подмодуля
+          git submodule deinit -f unpack/gf-data-rus
+          git submodule update --init --force --recursive unpack/gf-data-rus
+
+          cd unpack/gf-data-rus
+          git reset --hard
+          git clean -fdx
+          git lfs install
+          git lfs fetch --all
+          git lfs pull
+          cd ../..
+
+          # Проверяем результат
+          echo "### Repaired submodule content:"
+          Get-ChildItem -Path unpack/gf-data-rus/formatted -Recurse | Format-Table FullName
+
       - name: Verify Submodule Content
         id: verify-submodule
         run: |
