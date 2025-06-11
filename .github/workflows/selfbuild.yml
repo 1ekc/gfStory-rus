@@ -20,14 +20,16 @@ jobs:
 
       - name: Install System Dependencies
         run: |
+          Set-ExecutionPolicy Bypass -Scope Process -Force
           choco install ffmpeg pngquant imagemagick git-lfs nodejs -y --no-progress
           Import-Module "$env:ChocolateyInstall\helpers\chocolateyProfile.psm1" -Force
           Update-SessionEnvironment
+          git lfs version
           ffmpeg -version
           pngquant --version
           magick -version
-          git lfs version
           node --version
+
       - name: Checkout Repository
         uses: actions/checkout@v4
         with:
@@ -35,26 +37,34 @@ jobs:
           lfs: true
           fetch-depth: 0
 
-      - name: Setup Git LFS
+      - name: Initialize Git LFS
         run: |
           git lfs install
-          git lfs pull --include="unpack/gf-data-rus"
-          
-          # Рекурсивная инициализация LFS для всех подмодулей
+          git lfs fetch --all
+          git lfs pull
+
+          # Инициализация LFS для подмодулей
           git submodule foreach 'git lfs install'
-          git submodule foreach 'git lfs pull'
+          git submodule foreach 'git lfs pull --include="formatted"'
 
       - name: Verify Submodule Content
+        id: verify-submodule
         run: |
-          $submodulePath = "unpack/gf-data-rus/formatted"
-          echo "### Content of $submodulePath:"
-          Get-ChildItem -Path $submodulePath -Recurse | Format-Table FullName
-          
-          $fileCount = (Get-ChildItem -Path $submodulePath -Recurse -File).Count
-          if ($fileCount -lt 10) {
-              Write-Error "Submodule contains only $fileCount files! Expected more."
-              exit 1
+          $submoduleDir = "unpack/gf-data-rus/formatted"
+          $expectedFiles = @(
+            "story_util.hjson",
+            "character_info.hjson",
+            "background_info.hjson"
+          )
+
+          foreach ($file in $expectedFiles) {
+            $path = Join-Path -Path $submoduleDir -ChildPath $file
+            if (-not (Test-Path $path)) {
+                Write-Error "Missing critical submodule file: $file"
+                exit 1
+            }
           }
+          echo "All required submodule files present"
 
       - name: Install vgmstream
         run: |
