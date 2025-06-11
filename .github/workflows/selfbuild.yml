@@ -1,54 +1,256 @@
-- name: Install Dependencies
-  run: |
-    # Явный импорт профиля перед установкой
-    Import-Module "$env:ChocolateyInstall\helpers\chocolateyProfile.psm1" -Force
-    
-    # Установка с проверкой
-    choco install -y ffmpeg imagemagick pngquant --force
-    Update-SessionEnvironment
-    
-    # Проверка установки
-    ffmpeg -version
-    magick -version
-    pngquant --version
-    
-    # Скачивание vgmstream
-    $ProgressPreference = 'SilentlyContinue'
-    Invoke-WebRequest -Uri "https://github.com/vgmstream/vgmstream-releases/releases/download/nightly/vgmstream-win64.zip" -OutFile "vgmstream-win64.zip"
-    Expand-Archive -Path "vgmstream-win64.zip" -DestinationPath "vgmstream"
-    
-    # Проверка содержимого архива
-    echo "### Contents of vgmstream folder:"
-    Get-ChildItem -Recurse vgmstream | Format-Table FullName
-    
-    # Поиск исполняемого файла (структура может меняться)
-    $vgmstreamExe = Get-ChildItem -Path vgmstream -Recurse -Include "test.exe", "vgmstream-cli.exe" | Select-Object -First 1
-    
-    if (-not $vgmstreamExe) {
-        Write-Error "VGMStream executable not found!"
-        exit 1
-    }
-    
-    New-Item -ItemType Directory -Path "bin" -Force | Out-Null
-    Copy-Item -Path $vgmstreamExe.FullName -Destination "bin\vgmstream-cli.exe" -Force
-    
-    # Поиск magick.exe
-    $magickPath = Get-Command magick | Select-Object -ExpandProperty Source -ErrorAction SilentlyContinue
-    if (-not $magickPath) {
-        $magickPath = Get-ChildItem -Path "C:\Program Files\ImageMagick-*" -Recurse -Filter "magick.exe" | Select-Object -First 1
-    }
-    
-    if ($magickPath) {
-        Copy-Item -Path $magickPath -Destination "bin\" -Force
-    } else {
-        Write-Error "magick.exe not found!"
-    }
-    
-    # Добавление в PATH
-    $newPath = "$pwd\bin"
-    $env:Path = "$newPath;$env:Path"
-    echo "::add-path::$newPath"
-    
-    # Проверка доступности бинарников
-    vgmstream-cli.exe -v
-    bin\magick.exe -version
+name: Build Documentation
+
+on:
+  workflow_dispatch:
+  push:
+
+jobs:
+  documentation:
+    runs-on: self-hosted
+    defaults:
+      run:
+        shell: powershell
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: 'recursive'
+
+      - name: Import Chocolatey Profile
+        run: |
+          # Явный импорт профиля Chocolatey
+          Import-Module "$env:ChocolateyInstall\helpers\chocolateyProfile.psm1" -Force
+          Update-SessionEnvironment
+          
+          # Проверка версий
+          git --version
+          node --version
+          python --version
+
+      - name: Log Disk Space
+        run: Get-PSDrive C | Format-Table
+
+      - name: Free Disk Space
+        run: |
+          Remove-Item -Path "$env:TEMP\*" -Recurse -Force -ErrorAction SilentlyContinue
+          Clear-RecycleBin -Force -ErrorAction SilentlyContinue
+
+      - name: Install Dependencies
+        run: |
+          # Явный импорт профиля перед установкой
+          Import-Module "$env:ChocolateyInstall\helpers\chocolateyProfile.psm1" -Force
+
+          # Установка с проверкой
+          choco install -y ffmpeg imagemagick pngquant --force
+          Update-SessionEnvironment
+
+          # Проверка установки
+          ffmpeg -version
+          magick -version
+          pngquant --version
+
+          # Скачивание vgmstream
+          $ProgressPreference = 'SilentlyContinue'
+          Invoke-WebRequest -Uri "https://github.com/vgmstream/vgmstream-releases/releases/download/nightly/vgmstream-win64.zip" -OutFile "vgmstream-win64.zip"
+          Expand-Archive -Path "vgmstream-win64.zip" -DestinationPath "vgmstream"
+
+          # Проверка содержимого архива
+          echo "### Contents of vgmstream folder:"
+          Get-ChildItem -Recurse vgmstream | Format-Table FullName
+
+          # Поиск исполняемого файла (структура может меняться)
+          $vgmstreamExe = Get-ChildItem -Path vgmstream -Recurse -Include "test.exe", "vgmstream-cli.exe" | Select-Object -First 1
+
+          if (-not $vgmstreamExe) {
+              Write-Error "VGMStream executable not found!"
+              exit 1
+          }
+
+          New-Item -ItemType Directory -Path "bin" -Force | Out-Null
+          Copy-Item -Path $vgmstreamExe.FullName -Destination "bin\vgmstream-cli.exe" -Force
+
+          # Поиск magick.exe
+          $magickPath = Get-Command magick | Select-Object -ExpandProperty Source -ErrorAction SilentlyContinue
+          if (-not $magickPath) {
+              $magickPath = Get-ChildItem -Path "C:\Program Files\ImageMagick-*" -Recurse -Filter "magick.exe" | Select-Object -First 1
+          }
+
+          if ($magickPath) {
+              Copy-Item -Path $magickPath -Destination "bin\" -Force
+          } else {
+              Write-Error "magick.exe not found!"
+          }
+
+          # Добавление в PATH
+          $newPath = "$pwd\bin"
+          $env:Path = "$newPath;$env:Path"
+          echo "::add-path::$newPath"
+
+          # Проверка доступности бинарников
+          vgmstream-cli.exe -v
+          bin\magick.exe -version
+      - name: Restore Cached Resources
+        id: restore-gf-downloader-resources
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            unpack/downloader/output
+          key: gf-downloader-resources
+      - name: Setup PDM
+        uses: pdm-project/setup-pdm@v4
+      - name: Setup Python Environment
+        run: |
+          cd unpack
+          pdm install
+          source .venv/bin/activate
+          pip install -r downloader/requirements.txt
+      - name: Download Resources
+        run: |
+          cd unpack
+          source .venv/bin/activate
+          mkdir -p downloader/resdata
+          cp gf-data-rus/resdata_no_hash.json downloader/resdata/us_resdata.json
+          cd downloader
+          sed -i 's/"ch"/"us"/' config.json5
+          git apply ../downloader.patch
+          zip -j resdata.zip resdata/us_resdata.json
+          python downloader.py --downloadres 0 --abname
+      - name: Cache Downloaded Resources
+        uses: actions/cache/save@v4
+        with:
+          path: |
+            unpack/downloader/output
+          key: ${{ steps.restore-gf-downloader-resources.outputs.cache-primary-key }}
+      - name: Restore Cached Resources (images)
+        id: restore-image-resources
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            unpack/images
+          key: gf-image-resources
+      - name: Unpack images
+        run: |
+          cd unpack
+          cp -r fixed-data/* gf-data-rus
+          source .venv/bin/activate
+          python tests/test_backgrounds.py
+          python tests/test_characters.py
+      - name: Cache Resources (images)
+        uses: actions/cache/save@v4
+        with:
+          path: |
+            unpack/images
+          key: ${{ steps.restore-image-resources.outputs.cache-primary-key }}
+      - name: Restore Cached Resources (audio)
+        id: restore-audio-resources
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            unpack/audio
+          key: gf-audio-resources
+      - name: Unpack audio
+        run: |
+          cd unpack
+          source .venv/bin/activate
+          python tests/test_audio.py
+      - name: Cache Resources (audio)
+        uses: actions/cache/save@v4
+        with:
+          path: |
+            unpack/audio
+          key: ${{ steps.restore-audio-resources.outputs.cache-primary-key }}
+      - name: Unpack resources
+        run: |
+          cd unpack
+          source .venv/bin/activate
+          python -m gfunpack downloader/output -o .
+      - name: Log Disk Space
+        run: df -h
+
+      - name: Move Resources
+        run: |
+          cd unpack
+          # Создание целевых директорий
+          New-Item -ItemType Directory -Path "../src/assets" -Force | Out-Null
+          New-Item -ItemType Directory -Path "../public" -Force | Out-Null
+          
+          # Копирование файлов
+          $assets = @(
+              "audio/audio.json",
+              "images/backgrounds.json",
+              "images/characters.json",
+              "stories/stories.json",
+              "stories/chapters.json"
+          )
+          Copy-Item -Path $assets -Destination "../src/assets" -Force
+          
+          # Перемещение директорий
+          $folders = @("audio", "images", "stories")
+          Move-Item -Path $folders -Destination "../public" -Force
+          
+          # Проверка
+          echo "Copied assets:"
+          Get-ChildItem "../src/assets" | Format-Table Name
+          echo "Moved folders:"
+          Get-ChildItem "../public" | Format-Table Name
+
+      - name: Setup PNPM
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9.4.0
+          run_install: true  # Изменено на true
+
+      - name: Install Node dependencies
+        run: |
+          # Обновление PATH для PNPM
+          $pnpmPath = "$env:APPDATA\npm"
+          $env:Path = "$pnpmPath;$env:Path"
+          [Environment]::SetEnvironmentVariable("PATH", "$env:Path", "Process")
+          
+          pnpm --version
+          pnpm install --frozen-lockfile --shamefully-hoist
+
+      - name: Build Site (debug)
+        run: |
+          # Проверка окружения
+          echo "Node version: $(node -v)"
+          echo "PNPM version: $(pnpm -v)"
+          echo "Python version: $(python -V)"
+          
+          # Проверка ресурсов
+          echo "### Assets content:"
+          Get-ChildItem -Recurse src/assets | Format-Table FullName
+          
+          echo "### Public content:"
+          Get-ChildItem -Recurse public | Format-Table FullName
+          
+          # Запуск сборки
+          pnpm run build-index
+          pnpm run build
+          
+          # Проверка dist
+          if (Test-Path -Path dist) {
+              echo "dist folder created successfully"
+              Get-ChildItem -Recurse dist | Format-Table FullName
+          } else {
+              Write-Error "dist folder not found!"
+              Get-ChildItem -Recurse | Format-Table FullName
+              exit 1
+          }
+
+      - name: Upload dist as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist-debug
+          path: dist
+          if-no-files-found: error
+          retention-days: 1
+
+      # Раскомментируйте после проверки
+      #- name: Publish to Cloudflare Pages
+      #  uses: cloudflare/pages-action@v1
+      #  with:
+      #    apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      #    accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      #    projectName: ${{ secrets.CLOUDFLARE_PROJECT_NAME }}
+      #    directory: dist
