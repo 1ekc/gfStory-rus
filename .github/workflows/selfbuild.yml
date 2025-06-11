@@ -85,13 +85,16 @@ jobs:
         run: |
           cd unpack
           .\.venv\Scripts\activate
+
           New-Item -ItemType Directory -Path "downloader/resdata" -Force
-          Copy-Item -Path "gf-data-rus/resdata_no_hash.json" -Destination "downloader/resdata/us_resdata.json"
-          cd downloader
-          (Get-Content config.json5) -replace '"ch"', '"us"' | Set-Content config.json5
-          git apply ../downloader.patch
-          Compress-Archive -Path "resdata/us_resdata.json" -DestinationPath "resdata.zip"
-          python downloader.py --downloadres 0 --abname
+          $srcFile = "gf-data-rus/resdata_no_hash.json"
+          $destFile = "downloader/resdata/us_resdata.json"
+
+          # Удаляем старый файл, если существует
+          if (Test-Path $destFile) {
+              Remove-Item -Path $destFile -Force
+          }
+          Copy-Item -Path $srcFile -Destination $destFile -Force
 
       - name: Cache Downloaded Resources
         uses: actions/cache/save@v4
@@ -106,10 +109,26 @@ jobs:
           path: unpack/images
           key: gf-image-resources-${{ runner.os }}
 
-      - name: Unpack Images
+      - name: Unpack images
         run: |
           cd unpack
-          Copy-Item -Path "fixed-data\*" -Destination "gf-data-rus" -Recurse
+
+          # Синхронизация содержимого с перезаписью существующих файлов
+          $source = "fixed-data"
+          $destination = "gf-data-rus"
+
+          # Создаем папку назначения, если её нет
+          New-Item -ItemType Directory -Path $destination -Force | Out-Null
+
+          # Копируем с перезаписью
+          Get-ChildItem -Path $source | ForEach-Object {
+              $destPath = Join-Path -Path $destination -ChildPath $_.Name
+              if (Test-Path -Path $destPath) {
+                  Remove-Item -Path $destPath -Recurse -Force -ErrorAction SilentlyContinue
+              }
+              Copy-Item -Path $_.FullName -Destination $destination -Recurse -Force
+          }
+
           .\.venv\Scripts\activate
           python tests/test_backgrounds.py
           python tests/test_characters.py
@@ -145,15 +164,11 @@ jobs:
           .\.venv\Scripts\activate
           python -m gfunpack downloader/output -o .
 
-      - name: Prepare Assets
+      - name: Move Resources
         run: |
           cd unpack
-          
-          # Create target directories if missing
-          New-Item -ItemType Directory -Path "../src/assets" -Force | Out-Null
-          New-Item -ItemType Directory -Path "../public" -Force | Out-Null
-          
-          # Copy JSON files to assets
+
+          # Для каждого файла в assets
           $assets = @(
               "audio/audio.json",
               "images/backgrounds.json",
@@ -161,11 +176,24 @@ jobs:
               "stories/stories.json",
               "stories/chapters.json"
           )
-          Copy-Item -Path $assets -Destination "../src/assets" -Force
-          
-          # Move resource folders to public
+
+          foreach ($file in $assets) {
+              $dest = "../src/assets/$($file | Split-Path -Leaf)"
+              if (Test-Path $dest) {
+                  Remove-Item -Path $dest -Force
+              }
+              Copy-Item -Path $file -Destination "../src/assets" -Force
+          }
+
+          # Для каждой папки
           $folders = @("audio", "images", "stories")
-          Move-Item -Path $folders -Destination "../public" -Force
+          foreach ($folder in $folders) {
+              $dest = "../public/$folder"
+              if (Test-Path $dest) {
+                  Remove-Item -Path $dest -Recurse -Force
+              }
+              Move-Item -Path $folder -Destination "../public" -Force
+          }
 
       - name: Install Frontend Dependencies
         run: |
