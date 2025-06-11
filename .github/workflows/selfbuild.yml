@@ -58,16 +58,9 @@ jobs:
           echo "### Contents of vgmstream folder:"
           Get-ChildItem -Recurse vgmstream | Format-Table FullName
 
-          # Поиск исполняемого файла (структура может меняться)
-          $vgmstreamExe = Get-ChildItem -Path vgmstream -Recurse -Include "test.exe", "vgmstream-cli.exe" | Select-Object -First 1
-
-          if (-not $vgmstreamExe) {
-              Write-Error "VGMStream executable not found!"
-              exit 1
-          }
-
+          # Копируем vgmstream-cli.exe в папку bin
           New-Item -ItemType Directory -Path "bin" -Force | Out-Null
-          Copy-Item -Path $vgmstreamExe.FullName -Destination "bin\vgmstream-cli.exe" -Force
+          Copy-Item -Path "vgmstream\vgmstream-cli.exe" -Destination "bin\vgmstream-cli.exe" -Force
 
           # Поиск magick.exe
           $magickPath = Get-Command magick | Select-Object -ExpandProperty Source -ErrorAction SilentlyContinue
@@ -81,14 +74,18 @@ jobs:
               Write-Error "magick.exe not found!"
           }
 
-          # Добавление в PATH
+          # Добавление в PATH с использованием нового метода
           $newPath = "$pwd\bin"
-          $env:Path = "$newPath;$env:Path"
-          echo "::add-path::$newPath"
+          echo "Adding to PATH: $newPath"
+          # Новый метод добавления в PATH
+          echo "$newPath" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+          # Обновляем PATH для текущего шага
+          $env:Path = "$env:Path;$newPath"
 
           # Проверка доступности бинарников
-          vgmstream-cli.exe -v
+          bin\vgmstream-cli.exe -v
           bin\magick.exe -version
+
       - name: Restore Cached Resources
         id: restore-gf-downloader-resources
         uses: actions/cache/restore@v4
