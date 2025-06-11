@@ -48,16 +48,17 @@ jobs:
           echo "### Contents of bin folder:"
           Get-ChildItem -Path "bin" | Format-Table FullName
           
-          Write-Host "Checking vgmstream version:"
-          Start-Process -FilePath "bin\vgmstream-cli.exe" -ArgumentList "-v" -Wait -NoNewWindow
+          # Правильная проверка версии vgmstream
+          Write-Host "VGMStream version:"
+          & "bin\vgmstream-cli.exe" -V
           
           $binPath = "$pwd\bin"
           echo "Adding bin to PATH: $binPath"
           echo "$binPath" | Out-File -FilePath $env:GITHUB_PATH -Append -Encoding utf8
           $env:Path = "$binPath;$env:Path"
           
-          Write-Host "Checking vgmstream via PATH:"
-          vgmstream-cli.exe -v
+          Write-Host "VGMStream version via PATH:"
+          vgmstream-cli.exe -V
 
       - name: Setup Python
         uses: actions/setup-python@v5
