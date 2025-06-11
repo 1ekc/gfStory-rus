@@ -20,71 +20,14 @@ jobs:
 
       - name: Install System Dependencies
         run: |
-          Set-ExecutionPolicy Bypass -Scope Process -Force
           choco install ffmpeg pngquant imagemagick git-lfs nodejs -y --no-progress
           Import-Module "$env:ChocolateyInstall\helpers\chocolateyProfile.psm1" -Force
           Update-SessionEnvironment
-          git lfs version
           ffmpeg -version
           pngquant --version
           magick -version
+          git lfs version
           node --version
-
-      - name: Checkout Repository
-        uses: actions/checkout@v4
-        with:
-          submodules: 'recursive'
-          lfs: true
-          fetch-depth: 0
-
-      - name: Initialize Git LFS
-        run: |
-          git lfs install
-          git lfs fetch --all
-          git lfs pull
-
-          # Инициализация LFS для подмодулей
-          git submodule foreach 'git lfs install'
-          git submodule foreach 'git lfs pull --include="formatted"'
-
-      - name: Repair Submodule
-        if: steps.verify-submodule.outcome == 'failure'
-        run: |
-          # Полная переинициализация подмодуля
-          git submodule deinit -f unpack/gf-data-rus
-          git submodule update --init --force --recursive unpack/gf-data-rus
-
-          cd unpack/gf-data-rus
-          git reset --hard
-          git clean -fdx
-          git lfs install
-          git lfs fetch --all
-          git lfs pull
-          cd ../..
-
-          # Проверяем результат
-          echo "### Repaired submodule content:"
-          Get-ChildItem -Path unpack/gf-data-rus/formatted -Recurse | Format-Table FullName
-
-      - name: Verify Submodule Content
-        id: verify-submodule
-        run: |
-          $submoduleDir = "unpack/gf-data-rus/formatted"
-          $expectedFiles = @(
-            "story_util.hjson",
-            "character_info.hjson",
-            "background_info.hjson"
-          )
-
-          foreach ($file in $expectedFiles) {
-            $path = Join-Path -Path $submoduleDir -ChildPath $file
-            if (-not (Test-Path $path)) {
-                Write-Error "Missing critical submodule file: $file"
-                exit 1
-            }
-          }
-          echo "All required submodule files present"
-
       - name: Install vgmstream
         run: |
           $ProgressPreference = 'SilentlyContinue'
@@ -97,7 +40,6 @@ jobs:
           echo "Adding bin to PATH: $binPath"
           echo "$binPath" | Out-File -FilePath $env:GITHUB_PATH -Append -Encoding utf8
           $env:Path = "$binPath;$env:Path"
-
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
@@ -112,7 +54,6 @@ jobs:
           echo "$pdmPath" | Out-File -FilePath $env:GITHUB_PATH -Append -Encoding utf8
           $env:Path = "$pdmPath;$env:Path"
           pdm --version
-
       - name: Setup PNPM
         run: |
           npm install -g pnpm
@@ -121,7 +62,6 @@ jobs:
           echo "$pnpmPath" | Out-File -FilePath $env:GITHUB_PATH -Append -Encoding utf8
           $env:Path = "$pnpmPath;$env:Path"
           pnpm -v
-
       - name: Restore Cached Resources
         id: restore-gf-downloader-resources
         uses: actions/cache/restore@v4
@@ -136,27 +76,34 @@ jobs:
           pdm install --no-lock
           .\.venv\Scripts\activate
           pip install -r downloader/requirements.txt
-
       - name: Download Resources
         run: |
           cd unpack
           .\.venv\Scripts\activate
-
           New-Item -ItemType Directory -Path "downloader/resdata" -Force
           $srcFile = "gf-data-rus/resdata_no_hash.json"
           $destFile = "downloader/resdata/us_resdata.json"
-
           # Удаляем старый файл, если существует
           if (Test-Path $destFile) {
               Remove-Item -Path $destFile -Force
           }
           Copy-Item -Path $srcFile -Destination $destFile -Force
-
       - name: Cache Downloaded Resources
         uses: actions/cache/save@v4
         with:
           path: unpack/downloader/output
           key: ${{ steps.restore-gf-downloader-resources.outputs.cache-primary-key }}
+
+      - name: Convert Python Files to UTF-8
+        run: |
+          Get-ChildItem -Path unpack -Recurse -Filter *.py | ForEach-Object {
+              $content = Get-Content -Path $_.FullName -Raw
+              # Добавляем кодировку во все открытия файлов
+              $content = $content -replace 'open\(([^)]+)r\)', 'open($1, encoding="utf-8", mode="r")'
+              $content = $content -replace 'open\(([^)]+)w\)', 'open($1, encoding="utf-8", mode="w")'
+              $content = $content -replace 'open\(([^)]+)\)', 'open($1, encoding="utf-8")'
+              $content | Set-Content -Path $_.FullName -Encoding UTF8 -NoNewline
+          }
 
       - name: Restore Cached Images
         id: restore-image-resources
@@ -168,14 +115,11 @@ jobs:
       - name: Unpack images
         run: |
           cd unpack
-
           # Синхронизация содержимого с перезаписью существующих файлов
           $source = "fixed-data"
           $destination = "gf-data-rus"
-
           # Создаем папку назначения, если её нет
           New-Item -ItemType Directory -Path $destination -Force | Out-Null
-
           # Копируем с перезаписью
           Get-ChildItem -Path $source | ForEach-Object {
               $destPath = Join-Path -Path $destination -ChildPath $_.Name
@@ -184,11 +128,9 @@ jobs:
               }
               Copy-Item -Path $_.FullName -Destination $destination -Recurse -Force
           }
-
           .\.venv\Scripts\activate
           python tests/test_backgrounds.py
           python tests/test_characters.py
-
       - name: Cache Resources (Images)
         uses: actions/cache/save@v4
         with:
@@ -207,7 +149,6 @@ jobs:
           cd unpack
           .\.venv\Scripts\activate
           python tests/test_audio.py
-
       - name: Cache Resources (Audio)
         uses: actions/cache/save@v4
         with:
@@ -219,11 +160,9 @@ jobs:
           cd unpack
           .\.venv\Scripts\activate
           python -m gfunpack downloader/output -o .
-
       - name: Move Resources
         run: |
           cd unpack
-
           # Для каждого файла в assets
           $assets = @(
               "audio/audio.json",
@@ -232,7 +171,6 @@ jobs:
               "stories/stories.json",
               "stories/chapters.json"
           )
-
           foreach ($file in $assets) {
               $dest = "../src/assets/$($file | Split-Path -Leaf)"
               if (Test-Path $dest) {
@@ -240,7 +178,6 @@ jobs:
               }
               Copy-Item -Path $file -Destination "../src/assets" -Force
           }
-
           # Для каждой папки
           $folders = @("audio", "images", "stories")
           foreach ($folder in $folders) {
@@ -250,11 +187,9 @@ jobs:
               }
               Move-Item -Path $folder -Destination "../public" -Force
           }
-
       - name: Install Frontend Dependencies
         run: |
           pnpm install --frozen-lockfile
-
       - name: Build Frontend
         run: |
           pnpm build-index
@@ -268,7 +203,6 @@ jobs:
               Write-Error "Build failed: dist folder not found!"
               exit 1
           }
-
       - name: Deploy to Cloudflare Pages
         uses: cloudflare/pages-action@v1
         with:
