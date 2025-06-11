@@ -16,11 +16,16 @@ jobs:
         with:
           submodules: 'recursive'
 
-      # Установка необходимых глобальных зависимостей
-      - name: Setup Prerequisites
+      - name: Import Chocolatey Profile
         run: |
-          choco install -y git nodejs python3
-          refreshenv
+          # Явный импорт профиля Chocolatey
+          Import-Module "$env:ChocolateyInstall\helpers\chocolateyProfile.psm1" -Force
+          Update-SessionEnvironment
+          
+          # Проверка версий
+          git --version
+          node --version
+          python --version
 
       - name: Log Disk Space
         run: Get-PSDrive C | Format-Table
@@ -32,110 +37,113 @@ jobs:
 
       - name: Install Dependencies
         run: |
-          choco install -y ffmpeg imagemagick pngquant
-          refreshenv
-
-          # Проверка установленных версий
+          # Явный импорт профиля перед установкой
+          Import-Module "$env:ChocolateyInstall\helpers\chocolateyProfile.psm1" -Force
+          
+          # Установка с проверкой
+          choco install -y ffmpeg imagemagick pngquant --force
+          Update-SessionEnvironment
+          
+          # Проверка установки
           ffmpeg -version
           magick -version
           pngquant --version
-
+          
           # Скачивание vgmstream
+          $ProgressPreference = 'SilentlyContinue'
           Invoke-WebRequest -Uri "https://github.com/vgmstream/vgmstream-releases/releases/download/nightly/vgmstream-win64.zip" -OutFile "vgmstream-win64.zip"
           Expand-Archive -Path "vgmstream-win64.zip" -DestinationPath "vgmstream"
-          New-Item -ItemType Directory -Path "bin" -Force
-          Move-Item -Path "vgmstream/test.exe" -Destination "bin/vgmstream-cli.exe"
+          New-Item -ItemType Directory -Path "bin" -Force | Out-Null
+          Move-Item -Path "vgmstream/test.exe" -Destination "bin/vgmstream-cli.exe" -Force
           
-          # Добавление bin в PATH
-          $env:PATH = "$pwd\bin;$env:PATH"
-          [Environment]::SetEnvironmentVariable("PATH", "$env:PATH;$pwd\bin", "Machine")
-          echo "::add-path::$pwd\bin"
+          # Добавление в PATH
+          $newPath = "$pwd\bin"
+          $env:Path = "$newPath;$env:Path"
+          [Environment]::SetEnvironmentVariable("PATH", "$env:Path", "Process")
+          echo "::add-path::$newPath"
 
-      # ... (остальные шаги до "Move Resources" остаются без изменений) ...
+      # ... (остальные шаги остаются без изменений до Move Resources) ...
 
       - name: Move Resources
         run: |
           cd unpack
-          # Проверка существования файлов перед копированием
-          $files = @(
+          # Создание целевых директорий
+          New-Item -ItemType Directory -Path "../src/assets" -Force | Out-Null
+          New-Item -ItemType Directory -Path "../public" -Force | Out-Null
+          
+          # Копирование файлов
+          $assets = @(
               "audio/audio.json",
               "images/backgrounds.json",
               "images/characters.json",
               "stories/stories.json",
               "stories/chapters.json"
           )
+          Copy-Item -Path $assets -Destination "../src/assets" -Force
           
-          foreach ($file in $files) {
-              if (-not (Test-Path $file)) {
-                  Write-Error "Missing file: $file"
-              }
-          }
-          
-          # Копирование с проверкой
-          Copy-Item -Path $files -Destination "../src/assets" -Force
-          
-          # Проверка существования папок перед перемещением
+          # Перемещение директорий
           $folders = @("audio", "images", "stories")
-          foreach ($folder in $folders) {
-              if (-not (Test-Path $folder)) {
-                  Write-Error "Missing folder: $folder"
-              }
-          }
-          
           Move-Item -Path $folders -Destination "../public" -Force
           
-          # Логирование структуры public
-          echo "### Public folder structure:"
-          Get-ChildItem -Recurse ../public | Format-Table FullName
+          # Проверка
+          echo "Copied assets:"
+          Get-ChildItem "../src/assets" | Format-Table Name
+          echo "Moved folders:"
+          Get-ChildItem "../public" | Format-Table Name
 
       - name: Setup PNPM
         uses: pnpm/action-setup@v4
         with:
           version: 9.4.0
-          run_install: false
+          run_install: true  # Изменено на true
 
       - name: Install Node dependencies
         run: |
-          # Проверка версий
-          node -v
-          pnpm -v
+          # Обновление PATH для PNPM
+          $pnpmPath = "$env:APPDATA\npm"
+          $env:Path = "$pnpmPath;$env:Path"
+          [Environment]::SetEnvironmentVariable("PATH", "$env:Path", "Process")
           
-          pnpm install --frozen-lockfile
-          
-          # Логирование установленных зависимостей
-          pnpm list --depth 0
+          pnpm --version
+          pnpm install --frozen-lockfile --shamefully-hoist
 
       - name: Build Site (debug)
         run: |
-          echo "### Current directory: $pwd"
-          echo "### Source assets:"
+          # Проверка окружения
+          echo "Node version: $(node -v)"
+          echo "PNPM version: $(pnpm -v)"
+          echo "Python version: $(python -V)"
+          
+          # Проверка ресурсов
+          echo "### Assets content:"
           Get-ChildItem -Recurse src/assets | Format-Table FullName
           
-          echo "### Public folder:"
+          echo "### Public content:"
           Get-ChildItem -Recurse public | Format-Table FullName
           
-          # Запуск сборки с подробным выводом
-          pnpm build-index --verbose
-          pnpm build --verbose
+          # Запуск сборки
+          pnpm run build-index
+          pnpm run build
           
-          # Проверка существования dist
+          # Проверка dist
           if (Test-Path -Path dist) {
-              echo "### dist folder content:"
+              echo "dist folder created successfully"
               Get-ChildItem -Recurse dist | Format-Table FullName
           } else {
-              Write-Error "dist folder not created!"
+              Write-Error "dist folder not found!"
+              Get-ChildItem -Recurse | Format-Table FullName
               exit 1
           }
 
       - name: Upload dist as artifact
-        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: dist-debug
           path: dist
+          if-no-files-found: error
           retention-days: 1
 
-      # Раскомментируйте после успешной сборки
+      # Раскомментируйте после проверки
       #- name: Publish to Cloudflare Pages
       #  uses: cloudflare/pages-action@v1
       #  with:
