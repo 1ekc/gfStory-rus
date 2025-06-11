@@ -1,4 +1,4 @@
-name: Build Documentation
+name: Build and Deploy Documentation
 
 on:
   workflow_dispatch:
@@ -12,12 +12,13 @@ jobs:
         shell: powershell
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout Repository
+        uses: actions/checkout@v4
         with:
           submodules: 'recursive'
           lfs: true
 
-      - name: Install Windows Dependencies
+      - name: Install System Dependencies
         run: |
           choco install ffmpeg pngquant imagemagick git-lfs nodejs -y --no-progress
           Import-Module "$env:ChocolateyInstall\helpers\chocolateyProfile.psm1" -Force
@@ -28,15 +29,6 @@ jobs:
           git lfs version
           node --version
 
-      - name: Install PowerShell Core
-        run: |
-          choco install powershell-core -y --no-progress
-          $pwshPath = "C:\Program Files\PowerShell\7"
-          echo "Adding PowerShell Core to PATH: $pwshPath"
-          echo "$pwshPath" | Out-File -FilePath $env:GITHUB_PATH -Append -Encoding utf8
-          $env:Path = "$pwshPath;$env:Path"
-          pwsh --version
-
       - name: Install vgmstream
         run: |
           $ProgressPreference = 'SilentlyContinue'
@@ -45,19 +37,10 @@ jobs:
           Expand-Archive -Path "vgmstream.zip" -DestinationPath "bin" -Force
           Remove-Item -Path "vgmstream.zip" -Force
           
-          echo "### Contents of bin folder:"
-          Get-ChildItem -Path "bin" | Format-Table FullName
-          
-          # Правильная проверка версии vgmstream
-          Write-Host "VGMStream version:"
-          & "bin\vgmstream-cli.exe" -V
-          
           $binPath = "$pwd\bin"
           echo "Adding bin to PATH: $binPath"
           echo "$binPath" | Out-File -FilePath $env:GITHUB_PATH -Append -Encoding utf8
           $env:Path = "$binPath;$env:Path"
-          
-          Write-Host "VGMStream version via PATH:"
           vgmstream-cli.exe -V
 
       - name: Setup Python
@@ -84,19 +67,11 @@ jobs:
           $env:Path = "$pnpmPath;$env:Path"
           pnpm -v
 
-      - name: Verify Tools
-        run: |
-          Get-Command python, node, pdm, pnpm, ffmpeg, pngquant, magick, git, vgmstream-cli | Format-Table Name, Source
-          $env:Path -split ';' | Where-Object { $_ } | Sort-Object | Out-Host
-          python -V
-          node -v
-
       - name: Restore Cached Resources
         id: restore-gf-downloader-resources
         uses: actions/cache/restore@v4
         with:
-          path: |
-            unpack/downloader/output
+          path: unpack/downloader/output
           key: gf-downloader-resources-${{ runner.os }}
 
       - name: Setup Python Environment
@@ -122,19 +97,17 @@ jobs:
       - name: Cache Downloaded Resources
         uses: actions/cache/save@v4
         with:
-          path: |
-            unpack/downloader/output
+          path: unpack/downloader/output
           key: ${{ steps.restore-gf-downloader-resources.outputs.cache-primary-key }}
 
-      - name: Restore Cached Resources (images)
+      - name: Restore Cached Images
         id: restore-image-resources
         uses: actions/cache/restore@v4
         with:
-          path: |
-            unpack/images
+          path: unpack/images
           key: gf-image-resources-${{ runner.os }}
 
-      - name: Unpack images
+      - name: Unpack Images
         run: |
           cd unpack
           Copy-Item -Path "fixed-data\*" -Destination "gf-data-rus" -Recurse
@@ -142,43 +115,46 @@ jobs:
           python tests/test_backgrounds.py
           python tests/test_characters.py
 
-      - name: Cache Resources (images)
+      - name: Cache Resources (Images)
         uses: actions/cache/save@v4
         with:
-          path: |
-            unpack/images
+          path: unpack/images
           key: ${{ steps.restore-image-resources.outputs.cache-primary-key }}
 
-      - name: Restore Cached Resources (audio)
+      - name: Restore Cached Audio
         id: restore-audio-resources
         uses: actions/cache/restore@v4
         with:
-          path: |
-            unpack/audio
+          path: unpack/audio
           key: gf-audio-resources-${{ runner.os }}
 
-      - name: Unpack audio
+      - name: Unpack Audio
         run: |
           cd unpack
           .\.venv\Scripts\activate
           python tests/test_audio.py
 
-      - name: Cache Resources (audio)
+      - name: Cache Resources (Audio)
         uses: actions/cache/save@v4
         with:
-          path: |
-            unpack/audio
+          path: unpack/audio
           key: ${{ steps.restore-audio-resources.outputs.cache-primary-key }}
 
-      - name: Unpack resources
+      - name: Final Unpacking
         run: |
           cd unpack
           .\.venv\Scripts\activate
           python -m gfunpack downloader/output -o .
 
-      - name: Move Resources
+      - name: Prepare Assets
         run: |
           cd unpack
+          
+          # Create target directories if missing
+          New-Item -ItemType Directory -Path "../src/assets" -Force | Out-Null
+          New-Item -ItemType Directory -Path "../public" -Force | Out-Null
+          
+          # Copy JSON files to assets
           $assets = @(
               "audio/audio.json",
               "images/backgrounds.json",
@@ -187,41 +163,34 @@ jobs:
               "stories/chapters.json"
           )
           Copy-Item -Path $assets -Destination "../src/assets" -Force
-          Move-Item -Path "audio", "images", "stories" -Destination "../public" -Force
+          
+          # Move resource folders to public
+          $folders = @("audio", "images", "stories")
+          Move-Item -Path $folders -Destination "../public" -Force
 
-      - name: Install Node dependencies
+      - name: Install Frontend Dependencies
         run: |
           pnpm install --frozen-lockfile
-          pnpm list --depth 0
 
-      - name: Build Site
+      - name: Build Frontend
         run: |
           pnpm build-index
           pnpm build
           
-          # Проверка результата сборки
+          # Verify build output
           if (Test-Path -Path dist) {
-              echo "dist folder created successfully"
+              echo "Build successful! dist folder content:"
               Get-ChildItem -Recurse dist | Format-Table FullName
           } else {
-              Write-Error "dist folder not found!"
-              Get-ChildItem -Recurse | Format-Table FullName
+              Write-Error "Build failed: dist folder not found!"
               exit 1
           }
 
-      - name: Upload dist as artifact
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: dist-debug
-          path: dist
-          retention-days: 1
-
-      - name: Publish to Cloudflare Pages
+      - name: Deploy to Cloudflare Pages
         uses: cloudflare/pages-action@v1
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           projectName: ${{ secrets.CLOUDFLARE_PROJECT_NAME }}
           directory: dist
-        timeout-minutes: 10
+        timeout-minutes: 15
