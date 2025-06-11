@@ -1,5 +1,3 @@
-name: Build Documentation
-
 on:
   workflow_dispatch:
   push:
@@ -15,76 +13,111 @@ jobs:
       - uses: actions/checkout@v4
         with:
           submodules: 'recursive'
+          lfs: true  # Включить поддержку Git LFS
 
-      - name: Import Chocolatey Profile
+      - name: Install Windows Dependencies
         run: |
-          # Явный импорт профиля Chocolatey
+          # Установка основных зависимостей
+          choco install ffmpeg pngquant imagemagick git-lfs nodejs -y --no-progress
+          
+          # Импорт профиля Chocolatey
           Import-Module "$env:ChocolateyInstall\helpers\chocolateyProfile.psm1" -Force
           Update-SessionEnvironment
           
-          # Проверка версий
-          git --version
-          node --version
-          python --version
-
-      - name: Log Disk Space
-        run: Get-PSDrive C | Format-Table
-
-      - name: Free Disk Space
-        run: |
-          Remove-Item -Path "$env:TEMP\*" -Recurse -Force -ErrorAction SilentlyContinue
-          Clear-RecycleBin -Force -ErrorAction SilentlyContinue
-
-      - name: Install Dependencies
-        run: |
-          # Явный импорт профиля перед установкой
-          Import-Module "$env:ChocolateyInstall\helpers\chocolateyProfile.psm1" -Force
-
-          # Установка с проверкой
-          choco install -y ffmpeg imagemagick pngquant --force
-          Update-SessionEnvironment
-
-          # Проверка установки
+          # Проверка установленных версий
           ffmpeg -version
-          magick -version
           pngquant --version
+          magick -version
+          git lfs version
+          node --version
 
-          # Скачивание vgmstream
-          $ProgressPreference = 'SilentlyContinue'
-          Invoke-WebRequest -Uri "https://github.com/vgmstream/vgmstream-releases/releases/download/nightly/vgmstream-win64.zip" -OutFile "vgmstream-win64.zip"
-          Expand-Archive -Path "vgmstream-win64.zip" -DestinationPath "vgmstream"
-
-          # Проверка содержимого архива
-          echo "### Contents of vgmstream folder:"
-          Get-ChildItem -Recurse vgmstream | Format-Table FullName
-
-          # Копируем vgmstream-cli.exe в папку bin
-          New-Item -ItemType Directory -Path "bin" -Force | Out-Null
-          Copy-Item -Path "vgmstream\vgmstream-cli.exe" -Destination "bin\vgmstream-cli.exe" -Force
-
-          # Поиск magick.exe
-          $magickPath = Get-Command magick | Select-Object -ExpandProperty Source -ErrorAction SilentlyContinue
-          if (-not $magickPath) {
-              $magickPath = Get-ChildItem -Path "C:\Program Files\ImageMagick-*" -Recurse -Filter "magick.exe" | Select-Object -First 1
-          }
-
-          if ($magickPath) {
-              Copy-Item -Path $magickPath -Destination "bin\" -Force
-          } else {
-              Write-Error "magick.exe not found!"
-          }
-
-          # Добавление в PATH с использованием нового метода
-          $newPath = "$pwd\bin"
-          echo "Adding to PATH: $newPath"
-          # Новый метод добавления в PATH
-          echo "$newPath" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+      - name: Install PowerShell Core
+        run: |
+          # Устанавливаем PowerShell Core
+          choco install powershell-core -y --no-progress
+          
+          # Добавляем путь в переменную PATH
+          $pwshPath = "C:\Program Files\PowerShell\7"
+          echo "Adding PowerShell Core to PATH: $pwshPath"
+          echo "$pwshPath" | Out-File -FilePath $env:GITHUB_PATH -Append -Encoding utf8
+          
           # Обновляем PATH для текущего шага
-          $env:Path = "$env:Path;$newPath"
+          $env:Path = "$pwshPath;$env:Path"
+          
+          # Проверяем установку
+          pwsh --version
 
-          # Проверка доступности бинарников
-          bin\vgmstream-cli.exe -v
-          bin\magick.exe -version
+      - name: Install vgmstream
+        run: |
+          # Скачивание и распаковка vgmstream
+          $ProgressPreference = 'SilentlyContinue'
+          Invoke-WebRequest -Uri "https://github.com/vgmstream/vgmstream-releases/releases/download/nightly/vgmstream-win64.zip" -OutFile "vgmstream.zip"
+          Expand-Archive -Path "vgmstream.zip" -DestinationPath "vgmstream-temp" -Force
+          
+          # Создание папки bin и копирование файлов
+          New-Item -ItemType Directory -Path "bin" -Force | Out-Null
+          Copy-Item -Path "vgmstream-temp\vgmstream-cli.exe" -Destination "bin\" -Force
+          
+          # Очистка временных файлов
+          Remove-Item -Path "vgmstream.zip", "vgmstream-temp" -Recurse -Force
+          
+          # Добавление bin в PATH
+          $binPath = "$pwd\bin"
+          echo "Adding bin to PATH: $binPath"
+          echo "$binPath" | Out-File -FilePath $env:GITHUB_PATH -Append -Encoding utf8
+          $env:Path = "$binPath;$env:Path"
+          
+          # Проверка установки
+          vgmstream-cli.exe -v
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          architecture: 'x64'
+
+      - name: Install PDM
+        run: |
+          # Установка PDM через pip
+          python -m pip install pdm
+          
+          # Добавление PDM в PATH
+          $pdmPath = "$env:APPDATA\Python\Python311\Scripts"
+          echo "Adding PDM to PATH: $pdmPath"
+          echo "$pdmPath" | Out-File -FilePath $env:GITHUB_PATH -Append -Encoding utf8
+          $env:Path = "$pdmPath;$env:Path"
+          
+          # Проверка установки
+          pdm --version
+
+      - name: Setup PNPM
+        run: |
+          # Установка pnpm
+          npm install -g pnpm
+          
+          # Добавление pnpm в PATH
+          $pnpmPath = "$env:APPDATA\npm"
+          echo "Adding PNPM to PATH: $pnpmPath"
+          echo "$pnpmPath" | Out-File -FilePath $env:GITHUB_PATH -Append -Encoding utf8
+          $env:Path = "$pnpmPath;$env:Path"
+          
+          # Проверка установки
+          pnpm -v
+
+      - name: Verify Tools
+        run: |
+          # Проверка всех установленных инструментов
+          echo "### Installed tools:"
+          Get-Command python, node, pdm, pnpm, ffmpeg, pngquant, magick, git, vgmstream-cli | Format-Table Name, Source
+          
+          echo "### PATH:"
+          $env:Path -split ';' | Where-Object { $_ } | Sort-Object | Out-Host
+          
+          echo "### Python version:"
+          python -V
+          
+          echo "### Node version:"
+          node -v
 
       - name: Restore Cached Resources
         id: restore-gf-downloader-resources
@@ -92,32 +125,52 @@ jobs:
         with:
           path: |
             unpack/downloader/output
-          key: gf-downloader-resources
-      - name: Setup PDM
-        uses: pdm-project/setup-pdm@v4
+          key: gf-downloader-resources-${{ runner.os }}
+
       - name: Setup Python Environment
         run: |
           cd unpack
-          pdm install
-          source .venv/bin/activate
+          
+          # Инициализация PDM
+          pdm use python
+          pdm install --no-lock
+          
+          # Активация окружения
+          .\.venv\Scripts\activate
+          
+          # Установка зависимостей
           pip install -r downloader/requirements.txt
+
       - name: Download Resources
         run: |
           cd unpack
-          source .venv/bin/activate
-          mkdir -p downloader/resdata
-          cp gf-data-rus/resdata_no_hash.json downloader/resdata/us_resdata.json
+          .\.venv\Scripts\activate
+          
+          # Подготовка директорий
+          New-Item -ItemType Directory -Path "downloader/resdata" -Force
+          Copy-Item -Path "gf-data-rus/resdata_no_hash.json" -Destination "downloader/resdata/us_resdata.json"
+          
           cd downloader
-          sed -i 's/"ch"/"us"/' config.json5
+          # Замена конфигурации
+          (Get-Content config.json5) -replace '"ch"', '"us"' | Set-Content config.json5
+          
+          # Применение патча
           git apply ../downloader.patch
-          zip -j resdata.zip resdata/us_resdata.json
+          
+          # Создание архива
+          Compress-Archive -Path "resdata/us_resdata.json" -DestinationPath "resdata.zip"
+          
+          # Загрузка ресурсов
           python downloader.py --downloadres 0 --abname
+
       - name: Cache Downloaded Resources
         uses: actions/cache/save@v4
         with:
           path: |
             unpack/downloader/output
           key: ${{ steps.restore-gf-downloader-resources.outputs.cache-primary-key }}
+
+
       - name: Restore Cached Resources (images)
         id: restore-image-resources
         uses: actions/cache/restore@v4
@@ -207,47 +260,38 @@ jobs:
           pnpm --version
           pnpm install --frozen-lockfile --shamefully-hoist
 
-      - name: Build Site (debug)
+      - name: Build Site
         run: |
-          # Проверка окружения
-          echo "Node version: $(node -v)"
-          echo "PNPM version: $(pnpm -v)"
-          echo "Python version: $(python -V)"
-          
-          # Проверка ресурсов
-          echo "### Assets content:"
-          Get-ChildItem -Recurse src/assets | Format-Table FullName
-          
-          echo "### Public content:"
-          Get-ChildItem -Recurse public | Format-Table FullName
-          
-          # Запуск сборки
-          pnpm run build-index
-          pnpm run build
-          
-          # Проверка dist
+          # Установка Node-зависимостей
+          pnpm install --frozen-lockfile
+            
+          # Сборка проекта
+          pnpm build-index
+          pnpm build
+            
+          # Проверка результата сборки
           if (Test-Path -Path dist) {
-              echo "dist folder created successfully"
-              Get-ChildItem -Recurse dist | Format-Table FullName
+           echo "dist folder created successfully"
+           Get-ChildItem -Recurse dist | Format-Table FullName
           } else {
-              Write-Error "dist folder not found!"
-              Get-ChildItem -Recurse | Format-Table FullName
-              exit 1
-          }
+           Write-Error "dist folder not found!"
+           Get-ChildItem -Recurse | Format-Table FullName
+           exit 1
+           }
 
       - name: Upload dist as artifact
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: dist-debug
           path: dist
-          if-no-files-found: error
           retention-days: 1
 
-      # Раскомментируйте после проверки
-      #- name: Publish to Cloudflare Pages
-      #  uses: cloudflare/pages-action@v1
-      #  with:
-      #    apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-      #    accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-      #    projectName: ${{ secrets.CLOUDFLARE_PROJECT_NAME }}
-      #    directory: dist
+      - name: Publish to Cloudflare Pages
+        uses: cloudflare/pages-action@v1
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          projectName: ${{ secrets.CLOUDFLARE_PROJECT_NAME }}
+          directory: dist
+        timeout-minutes: 10
