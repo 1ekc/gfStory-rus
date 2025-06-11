@@ -41,7 +41,6 @@ jobs:
           echo "Adding bin to PATH: $binPath"
           echo "$binPath" | Out-File -FilePath $env:GITHUB_PATH -Append -Encoding utf8
           $env:Path = "$binPath;$env:Path"
-          vgmstream-cli.exe -V
 
       - name: Setup Python
         uses: actions/setup-python@v5
