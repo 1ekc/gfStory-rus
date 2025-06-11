@@ -28,6 +28,33 @@ jobs:
           magick -version
           git lfs version
           node --version
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          submodules: 'recursive'
+          lfs: true
+          fetch-depth: 0
+
+      - name: Setup Git LFS
+        run: |
+          git lfs install
+          git lfs pull --include="unpack/gf-data-rus"
+          
+          # Рекурсивная инициализация LFS для всех подмодулей
+          git submodule foreach 'git lfs install'
+          git submodule foreach 'git lfs pull'
+
+      - name: Verify Submodule Content
+        run: |
+          $submodulePath = "unpack/gf-data-rus/formatted"
+          echo "### Content of $submodulePath:"
+          Get-ChildItem -Path $submodulePath -Recurse | Format-Table FullName
+          
+          $fileCount = (Get-ChildItem -Path $submodulePath -Recurse -File).Count
+          if ($fileCount -lt 10) {
+              Write-Error "Submodule contains only $fileCount files! Expected more."
+              exit 1
+          }
 
       - name: Install vgmstream
         run: |
