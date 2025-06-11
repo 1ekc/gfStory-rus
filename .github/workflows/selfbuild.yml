@@ -1,0 +1,163 @@
+name: Build Documentation
+
+on:
+  workflow_dispatch:
+  push:
+
+#permissions:
+#  contents: write
+
+jobs:
+  documentation:
+    runs-on: self-hosted  # Используем self-hosted runner
+    defaults:
+      run:
+        shell: powershell  # По умолчанию используем PowerShell
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: 'recursive'
+
+      - name: Log Disk Space
+        run: Get-PSDrive C | Format-Table
+
+      - name: Free Disk Space
+        run: |
+          # Очистка временных файлов
+          Remove-Item -Path "$env:TEMP\*" -Recurse -Force -ErrorAction SilentlyContinue
+          Clear-RecycleBin -Force -ErrorAction SilentlyContinue
+
+      - name: Install Dependencies
+        run: |
+          # Установка необходимых компонентов
+          choco install -y ffmpeg imagemagick pngquant git
+
+          # Скачивание vgmstream для Windows
+          Invoke-WebRequest -Uri "https://github.com/vgmstream/vgmstream-releases/releases/download/nightly/vgmstream-win64.zip" -OutFile "vgmstream-win64.zip"
+          Expand-Archive -Path "vgmstream-win64.zip" -DestinationPath "vgmstream"
+          New-Item -ItemType Directory -Path "bin" -Force
+          Move-Item -Path "vgmstream/test.exe" -Destination "bin/vgmstream-cli.exe"
+
+          # Установка ImageMagick
+          Copy-Item "C:\Program Files\ImageMagick-*\magick.exe" -Destination "bin\"
+          $env:PATH = "$pwd\bin;$env:PATH"
+          echo "::add-path::$pwd\bin"
+
+      - name: Restore Cached Resources
+        id: restore-gf-downloader-resources
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            unpack/downloader/output
+          key: gf-downloader-resources-${{ runner.os }}  # Добавляем ОС в ключ
+
+      - name: Setup PDM
+        uses: pdm-project/setup-pdm@v4
+
+      - name: Setup Python Environment
+        run: |
+          cd unpack
+          pdm install
+          .\.venv\Scripts\activate
+          pip install -r downloader/requirements.txt
+
+      - name: Download Resources
+        run: |
+          cd unpack
+          .\.venv\Scripts\activate
+          New-Item -ItemType Directory -Path "downloader/resdata" -Force
+          Copy-Item -Path "gf-data-rus/resdata_no_hash.json" -Destination "downloader/resdata/us_resdata.json"
+          cd downloader
+          (Get-Content config.json5) -replace '"ch"', '"us"' | Set-Content config.json5
+          git apply ../downloader.patch
+          Compress-Archive -Path "resdata/us_resdata.json" -DestinationPath "resdata.zip"
+          python downloader.py --downloadres 0 --abname
+
+      - name: Cache Downloaded Resources
+        uses: actions/cache/save@v4
+        with:
+          path: |
+            unpack/downloader/output
+          key: ${{ steps.restore-gf-downloader-resources.outputs.cache-primary-key }}
+
+      - name: Restore Cached Resources (images)
+        id: restore-image-resources
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            unpack/images
+          key: gf-image-resources-${{ runner.os }}
+
+      - name: Unpack images
+        run: |
+          cd unpack
+          Copy-Item -Path "fixed-data\*" -Destination "gf-data-rus" -Recurse
+          .\.venv\Scripts\activate
+          python tests/test_backgrounds.py
+          python tests/test_characters.py
+
+      - name: Cache Resources (images)
+        uses: actions/cache/save@v4
+        with:
+          path: |
+            unpack/images
+          key: ${{ steps.restore-image-resources.outputs.cache-primary-key }}
+
+      - name: Restore Cached Resources (audio)
+        id: restore-audio-resources
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            unpack/audio
+          key: gf-audio-resources-${{ runner.os }}
+
+      - name: Unpack audio
+        run: |
+          cd unpack
+          .\.venv\Scripts\activate
+          python tests/test_audio.py
+
+      - name: Cache Resources (audio)
+        uses: actions/cache/save@v4
+        with:
+          path: |
+            unpack/audio
+          key: ${{ steps.restore-audio-resources.outputs.cache-primary-key }}
+
+      - name: Unpack resources
+        run: |
+          cd unpack
+          .\.venv\Scripts\activate
+          python -m gfunpack downloader/output -o .
+
+      - name: Log Disk Space
+        run: Get-PSDrive C | Format-Table
+
+      - name: Move Resources
+        run: |
+          cd unpack
+          Copy-Item -Path "audio/audio.json", "images/backgrounds.json", "images/characters.json", "stories/stories.json", "stories/chapters.json" -Destination "../src/assets"
+          Move-Item -Path "audio", "images", "stories" -Destination "../public"
+
+      - name: Setup PNPM
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9.4.0
+          run_install: false
+
+      - name: Setup PNPM Workspace
+        run: pnpm install
+
+      - name: Build Site
+        run: |
+          pnpm build-index
+          pnpm build
+
+#      - name: Publish to Cloudflare Pages
+#        uses: cloudflare/pages-action@v1
+#        with:
+#          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+#          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+#          projectName: ${{ secrets.CLOUDFLARE_PROJECT_NAME  }}
+#          directory: dist
