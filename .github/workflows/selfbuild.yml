@@ -1,153 +1,54 @@
-name: Build Documentation
-
-on:
-  workflow_dispatch:
-  push:
-
-jobs:
-  documentation:
-    runs-on: self-hosted
-    defaults:
-      run:
-        shell: powershell
-
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          submodules: 'recursive'
-
-      - name: Import Chocolatey Profile
-        run: |
-          # Явный импорт профиля Chocolatey
-          Import-Module "$env:ChocolateyInstall\helpers\chocolateyProfile.psm1" -Force
-          Update-SessionEnvironment
-          
-          # Проверка версий
-          git --version
-          node --version
-          python --version
-
-      - name: Log Disk Space
-        run: Get-PSDrive C | Format-Table
-
-      - name: Free Disk Space
-        run: |
-          Remove-Item -Path "$env:TEMP\*" -Recurse -Force -ErrorAction SilentlyContinue
-          Clear-RecycleBin -Force -ErrorAction SilentlyContinue
-
-      - name: Install Dependencies
-        run: |
-          # Явный импорт профиля перед установкой
-          Import-Module "$env:ChocolateyInstall\helpers\chocolateyProfile.psm1" -Force
-          
-          # Установка с проверкой
-          choco install -y ffmpeg imagemagick pngquant --force
-          Update-SessionEnvironment
-          
-          # Проверка установки
-          ffmpeg -version
-          magick -version
-          pngquant --version
-          
-          # Скачивание vgmstream
-          $ProgressPreference = 'SilentlyContinue'
-          Invoke-WebRequest -Uri "https://github.com/vgmstream/vgmstream-releases/releases/download/nightly/vgmstream-win64.zip" -OutFile "vgmstream-win64.zip"
-          Expand-Archive -Path "vgmstream-win64.zip" -DestinationPath "vgmstream"
-          New-Item -ItemType Directory -Path "bin" -Force | Out-Null
-          Move-Item -Path "vgmstream/test.exe" -Destination "bin/vgmstream-cli.exe" -Force
-          
-          # Добавление в PATH
-          $newPath = "$pwd\bin"
-          $env:Path = "$newPath;$env:Path"
-          [Environment]::SetEnvironmentVariable("PATH", "$env:Path", "Process")
-          echo "::add-path::$newPath"
-
-      # ... (остальные шаги остаются без изменений до Move Resources) ...
-
-      - name: Move Resources
-        run: |
-          cd unpack
-          # Создание целевых директорий
-          New-Item -ItemType Directory -Path "../src/assets" -Force | Out-Null
-          New-Item -ItemType Directory -Path "../public" -Force | Out-Null
-          
-          # Копирование файлов
-          $assets = @(
-              "audio/audio.json",
-              "images/backgrounds.json",
-              "images/characters.json",
-              "stories/stories.json",
-              "stories/chapters.json"
-          )
-          Copy-Item -Path $assets -Destination "../src/assets" -Force
-          
-          # Перемещение директорий
-          $folders = @("audio", "images", "stories")
-          Move-Item -Path $folders -Destination "../public" -Force
-          
-          # Проверка
-          echo "Copied assets:"
-          Get-ChildItem "../src/assets" | Format-Table Name
-          echo "Moved folders:"
-          Get-ChildItem "../public" | Format-Table Name
-
-      - name: Setup PNPM
-        uses: pnpm/action-setup@v4
-        with:
-          version: 9.4.0
-          run_install: true  # Изменено на true
-
-      - name: Install Node dependencies
-        run: |
-          # Обновление PATH для PNPM
-          $pnpmPath = "$env:APPDATA\npm"
-          $env:Path = "$pnpmPath;$env:Path"
-          [Environment]::SetEnvironmentVariable("PATH", "$env:Path", "Process")
-          
-          pnpm --version
-          pnpm install --frozen-lockfile --shamefully-hoist
-
-      - name: Build Site (debug)
-        run: |
-          # Проверка окружения
-          echo "Node version: $(node -v)"
-          echo "PNPM version: $(pnpm -v)"
-          echo "Python version: $(python -V)"
-          
-          # Проверка ресурсов
-          echo "### Assets content:"
-          Get-ChildItem -Recurse src/assets | Format-Table FullName
-          
-          echo "### Public content:"
-          Get-ChildItem -Recurse public | Format-Table FullName
-          
-          # Запуск сборки
-          pnpm run build-index
-          pnpm run build
-          
-          # Проверка dist
-          if (Test-Path -Path dist) {
-              echo "dist folder created successfully"
-              Get-ChildItem -Recurse dist | Format-Table FullName
-          } else {
-              Write-Error "dist folder not found!"
-              Get-ChildItem -Recurse | Format-Table FullName
-              exit 1
-          }
-
-      - name: Upload dist as artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: dist-debug
-          path: dist
-          if-no-files-found: error
-          retention-days: 1
-
-      # Раскомментируйте после проверки
-      #- name: Publish to Cloudflare Pages
-      #  uses: cloudflare/pages-action@v1
-      #  with:
-      #    apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-      #    accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-      #    projectName: ${{ secrets.CLOUDFLARE_PROJECT_NAME }}
-      #    directory: dist
+- name: Install Dependencies
+  run: |
+    # Явный импорт профиля перед установкой
+    Import-Module "$env:ChocolateyInstall\helpers\chocolateyProfile.psm1" -Force
+    
+    # Установка с проверкой
+    choco install -y ffmpeg imagemagick pngquant --force
+    Update-SessionEnvironment
+    
+    # Проверка установки
+    ffmpeg -version
+    magick -version
+    pngquant --version
+    
+    # Скачивание vgmstream
+    $ProgressPreference = 'SilentlyContinue'
+    Invoke-WebRequest -Uri "https://github.com/vgmstream/vgmstream-releases/releases/download/nightly/vgmstream-win64.zip" -OutFile "vgmstream-win64.zip"
+    Expand-Archive -Path "vgmstream-win64.zip" -DestinationPath "vgmstream"
+    
+    # Проверка содержимого архива
+    echo "### Contents of vgmstream folder:"
+    Get-ChildItem -Recurse vgmstream | Format-Table FullName
+    
+    # Поиск исполняемого файла (структура может меняться)
+    $vgmstreamExe = Get-ChildItem -Path vgmstream -Recurse -Include "test.exe", "vgmstream-cli.exe" | Select-Object -First 1
+    
+    if (-not $vgmstreamExe) {
+        Write-Error "VGMStream executable not found!"
+        exit 1
+    }
+    
+    New-Item -ItemType Directory -Path "bin" -Force | Out-Null
+    Copy-Item -Path $vgmstreamExe.FullName -Destination "bin\vgmstream-cli.exe" -Force
+    
+    # Поиск magick.exe
+    $magickPath = Get-Command magick | Select-Object -ExpandProperty Source -ErrorAction SilentlyContinue
+    if (-not $magickPath) {
+        $magickPath = Get-ChildItem -Path "C:\Program Files\ImageMagick-*" -Recurse -Filter "magick.exe" | Select-Object -First 1
+    }
+    
+    if ($magickPath) {
+        Copy-Item -Path $magickPath -Destination "bin\" -Force
+    } else {
+        Write-Error "magick.exe not found!"
+    }
+    
+    # Добавление в PATH
+    $newPath = "$pwd\bin"
+    $env:Path = "$newPath;$env:Path"
+    echo "::add-path::$newPath"
+    
+    # Проверка доступности бинарников
+    vgmstream-cli.exe -v
+    bin\magick.exe -version
