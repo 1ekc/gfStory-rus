@@ -74,6 +74,6 @@ class Mapper:
     def write_indices(self):
         data = self.mapped
         path = self.characters.destination.joinpath(f'mapped.json')
-        with open(path, 'w') as f:
+        with open(path, 'w', encoding='utf-8') as f:
             f.write(json.dumps(data, indent=2, ensure_ascii=False))
         path.rename(self.characters.destination.joinpath('characters.json'))

@@ -118,6 +118,6 @@ class BackgroundCollection:
             indent=2,
         )
         path = self.destination.parent.joinpath('backgrounds.json')
-        with path.open('w') as f:
+        with path.open('w', encoding='utf-8') as f:
             f.write(s)
         return path

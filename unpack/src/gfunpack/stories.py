@@ -84,9 +84,9 @@ class StoryResources:
     characters: dict[str, dict[str, mapper.SpriteDetails]]
 
     def __init__(self, audio_json: pathlib.Path, background_json: pathlib.Path, character_json: pathlib.Path) -> None:
-        self.audio = json.load(audio_json.open())
-        self.backgrounds = json.load(background_json.open())
-        self.characters = json.load(character_json.open())
+        self.audio = json.load(audio_json.open(encoding='utf-8'))
+        self.backgrounds = json.load(background_json.open(encoding='utf-8'))
+        self.characters = json.load(character_json.open(encoding='utf-8'))
         for character in self.characters.values():
             for k, sprite in character.items():
                 character[k] = mapper.SpriteDetails(**typing.cast(dict[str, typing.Any], sprite))
@@ -471,7 +471,7 @@ class Stories:
             content: str = text.m_Script.tobytes().decode(errors='ignore')
             path = self.destination.joinpath(*name.split('/'))
             os.makedirs(path.parent, exist_ok=True)
-            with path.open('w') as f:
+            with path.open('w', encoding='utf-8') as f:
                 f.write(self._decode(content, name) or '')
             extracted[name] = path
         return extracted
@@ -487,8 +487,8 @@ class Stories:
                 _warning('filling in %s', name)
                 path = self.destination.joinpath(rel)
                 path.parent.mkdir(exist_ok=True)
-                with path.open('w') as f:
-                    with file.open() as content:
+                with path.open('w', encoding='utf-8') as f:
+                    with file.open('r', encoding='utf-8') as content:
                         f.write(self._decode(content.read(), name) or '')
                 self.extracted[name] = path
 
