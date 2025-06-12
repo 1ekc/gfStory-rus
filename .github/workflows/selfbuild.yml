@@ -14,15 +14,10 @@ jobs:
     steps:
       - name: Force submodule update
         run: |
-          # Удаляем все следы подмодуля
-          git submodule deinit -f unpack/gf-data-rus
-          git rm --cached unpack/gf-data-rus
-          git config -f .gitmodules --remove-section submodule.unpack/gf-data-rus
-          git config -f .git/config --remove-section submodule.unpack/gf-data-rus
-          rm -r -fo .git/modules/unpack/gf-data-rus
-
-          # Добавляем заново
-          git submodule add -b main https://github.com/1ekc/gf-data-rus.git unpack/gf-data-rus
+          git submodule sync --recursive
+          git -C unpack/gf-data-rus fetch --all
+          git -C unpack/gf-data-rus reset --hard origin/main
+          git -C unpack/gf-data-rus pull origin main
           git submodule update --init --force --recursive
 
       - name: Verify files
