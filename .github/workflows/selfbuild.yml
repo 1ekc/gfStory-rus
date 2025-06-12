@@ -14,25 +14,34 @@ jobs:
     steps:
       - name: Force submodule update
         run: |
-          git submodule sync --recursive
-          git -C unpack/gf-data-rus checkout main
-          git -C unpack/gf-data-rus pull origin main
+          # Удаляем все следы подмодуля
+          git submodule deinit -f unpack/gf-data-rus
+          git rm --cached unpack/gf-data-rus
+          git config -f .gitmodules --remove-section submodule.unpack/gf-data-rus
+          git config -f .git/config --remove-section submodule.unpack/gf-data-rus
+          rm -r -fo .git/modules/unpack/gf-data-rus
+
+          # Добавляем заново
+          git submodule add -b main https://github.com/1ekc/gf-data-rus.git unpack/gf-data-rus
           git submodule update --init --force --recursive
 
-      - name: Inspect submodule state
+      - name: Verify files
+        shell: powershell
         run: |
-          echo "Current commit in gf-data-rus:"
+          Write-Output "Current commit in gf-data-rus:"
           git -C unpack/gf-data-rus rev-parse HEAD
-          echo "File list:"
-          ls -R unpack/gf-data-rus
-          echo "File existence check:"
-          if [ -f "unpack/gf-data-rus/formatted/story_util.hjson" ]; then
-            echo "✅ File exists"
-          else
-            echo "❌ File NOT found"
-            echo "Directory contents:"
-            ls -l unpack/gf-data-rus/formatted/
-          fi
+
+          Write-Output "File existence check:"
+          $filePath = "unpack/gf-data-rus/formatted/story_util.hjson"
+          if (Test-Path $filePath) {
+              Write-Output "✅ File exists at $filePath"
+              Get-Item $filePath
+          } else {
+              Write-Output "❌ File NOT found at $filePath"
+              Write-Output "Directory contents:"
+              Get-ChildItem -Recurse unpack/gf-data-rus/formatted
+              exit 1
+          }
 
       - name: Checkout Repository
         uses: actions/checkout@v4
