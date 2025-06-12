@@ -12,6 +12,9 @@ jobs:
         shell: powershell
 
     steps:
+      - name: Update submodules
+        run: git submodule update --init --remote --recursive
+
       - name: Checkout Repository
         uses: actions/checkout@v4
         with:
