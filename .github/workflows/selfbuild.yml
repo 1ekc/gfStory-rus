@@ -12,21 +12,33 @@ jobs:
         shell: powershell
 
     steps:
-      - name: Force submodule update
+      # Первый шаг - получение основного репозитория
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          submodules: 'recursive'
+          lfs: true
+          fetch-depth: 0  # Получаем всю историю коммитов
+
+      # Обновляем нужный подмодуль до последней версии main
+      - name: Update gf-data-rus Submodule
         run: |
-          git submodule sync --recursive
-          git -C unpack/gf-data-rus fetch --all
-          git -C unpack/gf-data-rus reset --hard origin/main
+          # Переключаемся на ветку main в подмодуле
+          git -C unpack/gf-data-rus checkout main
+          
+          # Получаем последние изменения
           git -C unpack/gf-data-rus pull origin main
-          git submodule update --init --force --recursive
+          
+          # Проверяем состояние
+          Write-Output "Submodule status:"
+          git submodule status
+          
+          Write-Output "Latest commit in gf-data-rus:"
+          git -C unpack/gf-data-rus log -1 --oneline
 
-      - name: Verify files
-        shell: powershell
+      # Проверка наличия файлов в подмодуле
+      - name: Verify Submodule Files
         run: |
-          Write-Output "Current commit in gf-data-rus:"
-          git -C unpack/gf-data-rus rev-parse HEAD
-
-          Write-Output "File existence check:"
           $filePath = "unpack/gf-data-rus/formatted/story_util.hjson"
           if (Test-Path $filePath) {
               Write-Output "✅ File exists at $filePath"
@@ -38,12 +50,7 @@ jobs:
               exit 1
           }
 
-      - name: Checkout Repository
-        uses: actions/checkout@v4
-        with:
-          submodules: 'recursive'
-          lfs: true
-
+      # Остальные шаги остаются без изменений
       - name: Install System Dependencies
         run: |
           choco install ffmpeg pngquant imagemagick git-lfs nodejs -y --no-progress
@@ -54,6 +61,7 @@ jobs:
           magick -version
           git lfs version
           node --version
+
       - name: Install vgmstream
         run: |
           $ProgressPreference = 'SilentlyContinue'
@@ -66,6 +74,7 @@ jobs:
           echo "Adding bin to PATH: $binPath"
           echo "$binPath" | Out-File -FilePath $env:GITHUB_PATH -Append -Encoding utf8
           $env:Path = "$binPath;$env:Path"
+
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
@@ -80,6 +89,7 @@ jobs:
           echo "$pdmPath" | Out-File -FilePath $env:GITHUB_PATH -Append -Encoding utf8
           $env:Path = "$pdmPath;$env:Path"
           pdm --version
+
       - name: Setup PNPM
         run: |
           npm install -g pnpm
@@ -88,6 +98,7 @@ jobs:
           echo "$pnpmPath" | Out-File -FilePath $env:GITHUB_PATH -Append -Encoding utf8
           $env:Path = "$pnpmPath;$env:Path"
           pnpm -v
+
       - name: Restore Cached Resources
         id: restore-gf-downloader-resources
         uses: actions/cache/restore@v4
@@ -102,6 +113,7 @@ jobs:
           pdm install --no-lock
           .\.venv\Scripts\activate
           pip install -r downloader/requirements.txt
+
       - name: Download Resources
         run: |
           cd unpack
@@ -114,6 +126,7 @@ jobs:
               Remove-Item -Path $destFile -Force
           }
           Copy-Item -Path $srcFile -Destination $destFile -Force
+
       - name: Cache Downloaded Resources
         uses: actions/cache/save@v4
         with:
@@ -146,6 +159,7 @@ jobs:
           .\.venv\Scripts\activate
           python tests/test_backgrounds.py
           python tests/test_characters.py
+
       - name: Cache Resources (Images)
         uses: actions/cache/save@v4
         with:
@@ -164,6 +178,7 @@ jobs:
           cd unpack
           .\.venv\Scripts\activate
           python tests/test_audio.py
+
       - name: Cache Resources (Audio)
         uses: actions/cache/save@v4
         with:
@@ -175,6 +190,7 @@ jobs:
           cd unpack
           .\.venv\Scripts\activate
           python -m gfunpack downloader/output -o .
+
       - name: Move Resources
         run: |
           cd unpack
@@ -202,9 +218,11 @@ jobs:
               }
               Move-Item -Path $folder -Destination "../public" -Force
           }
+
       - name: Install Frontend Dependencies
         run: |
           pnpm install --frozen-lockfile
+
       - name: Build Frontend
         run: |
           pnpm build-index
@@ -218,6 +236,7 @@ jobs:
               Write-Error "Build failed: dist folder not found!"
               exit 1
           }
+
       - name: Deploy to Cloudflare Pages
         uses: cloudflare/pages-action@v1
         with:
