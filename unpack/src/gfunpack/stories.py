@@ -426,7 +426,8 @@ class Stories:
 
     missing_audio: dict[str, set[str]]
 
-    def __init__(self, directory: str, destination: str, *, gf_data_directory: str | None = None, root_destination: str | None = None):
+    def __init__(self, directory: str, destination: str, *, gf_data_directory: str | None = None,
+                 root_destination: str | None = None):
         self.directory = utils.check_directory(directory)
         self.destination = utils.check_directory(destination, create=True)
         self.resource_file = self.directory.joinpath('asset_textavg.ab')
@@ -436,13 +437,76 @@ class Stories:
             root.joinpath('images', 'backgrounds.json'),
             root.joinpath('images', 'characters.json'),
         )
-        self.gf_data_directory = root.joinpath('gf-data-rus') if gf_data_directory is None else pathlib.Path(gf_data_directory)
+        self.gf_data_directory = root.joinpath('gf-data-rus') if gf_data_directory is None else pathlib.Path(
+            gf_data_directory)
         self.content_tags = set()
         self.effect_tags = set()
-        self.missing_audio = { 'bgm': set(), 'se': set() }
-        self.extracted = self.extract_all()
-        self.copy_missing_pieces()
+        self.missing_audio = {'bgm': set(), 'se': set()}
+        self.extracted = {}
+
+        # Сначала загружаем файлы из gf-data-rus
+        self.load_from_gf_data_rus()
+
+        # Затем дополняем файлами из asset_textavg.ab (только если их нет в gf-data-rus)
+        self.extract_from_asset()
+
         _warning('missing audio: %s', self.missing_audio)
+
+    def load_from_gf_data_rus(self):
+        """Загружает все txt-файлы из gf-data-rus с приоритетом"""
+        directory = self.gf_data_directory.joinpath('asset', 'avgtxt')
+        if not directory.exists():
+            _warning('gf-data-rus directory not found: %s', directory)
+            return
+
+        for file in directory.glob('**/*.txt'):
+            rel_path = str(file.relative_to(directory))
+            dest_path = self.destination.joinpath(rel_path)
+
+            # Создаем директории, если нужно
+            os.makedirs(dest_path.parent, exist_ok=True)
+
+            # Читаем и обрабатываем файл
+            with file.open('r', encoding='utf-8') as f:
+                content = f.read()
+                processed = self._decode(content, rel_path)
+
+            # Сохраняем обработанный файл
+            with dest_path.open('w', encoding='utf-8') as f:
+                f.write(processed or '')
+
+            # Добавляем в список извлеченных файлов
+            self.extracted[rel_path] = dest_path
+
+    def extract_from_asset(self):
+        """Дополняет файлами из asset_textavg.ab (только отсутствующие)"""
+        if not self.resource_file.exists():
+            _warning('asset file not found: %s', self.resource_file)
+            return
+
+        assets = UnityPy.load(str(self.resource_file))
+        for o in assets.objects:
+            if o.container is None or o.type.name != 'TextAsset':
+                continue
+
+            match = _text_asset_regex.match(o.container)
+            if match is None:
+                continue
+
+            name = match.group(1)
+            if name in self.extracted:
+                continue  # Пропускаем, если файл уже есть из gf-data-rus
+
+            text = typing.cast(TextAsset, o.read())
+            content = text.m_Script.tobytes().decode(errors='ignore')
+
+            path = self.destination.joinpath(*name.split('/'))
+            os.makedirs(path.parent, exist_ok=True)
+
+            with path.open('w', encoding='utf-8') as f:
+                f.write(self._decode(content, name) or '')
+
+            self.extracted[name] = path
 
     def _decode(self, content: str, filename: str):
         transpiler = StoryTranspiler(self.resources, script=content, filename=filename)
@@ -495,7 +559,8 @@ class Stories:
     def save(self):
         path = self.destination.joinpath('stories.json')
         with path.open('w', encoding='utf-8') as f:
-            f.write(json.dumps(
-                dict((k, str(p.relative_to(self.destination))) for k, p in self.extracted.items()),
+            json.dump(
+                {k: str(p.relative_to(self.destination)) for k, p in self.extracted.items()},
+                f,
                 ensure_ascii=False,
-            ))
+            )
