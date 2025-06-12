@@ -22,9 +22,23 @@ jobs:
       # Шаг 2: Принудительное обновление подмодуля
       - name: Update and checkout gf-data-rus submodule
         run: |
-          git submodule update --init --remote --force
-          cd unpack/gf-data-rus && git checkout main && git pull origin main
-          ls -la unpack/gf-data-rus/  # Проверка содержимого
+          # Инициализация и обновление всех подмодулей
+          git submodule update --init --recursive --remote --force
+    
+          # Переход в директорию подмодуля (если она существует)
+          if [ -d "unpack/gf-data-rus" ]; then
+            cd unpack/gf-data-rus
+            git checkout main
+            git pull origin main
+            cd ../..
+          else
+            echo "Error: Submodule directory 'unpack/gf-data-rus' not found!"
+            ls -la unpack/  # Покажем содержимое unpack для диагностики
+            exit 1
+          fi
+    
+          # Проверка содержимого
+          ls -la unpack/gf-data-rus/
 
       # Шаг 3: Освобождение места на диске
       - name: Log Disk Space
