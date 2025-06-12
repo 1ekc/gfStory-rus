@@ -463,5 +463,5 @@ class Chapters:
         for k, chapters in self.all_chapters.items():
             chapter_dicts = [dataclasses.asdict(c) for c in chapters]
             all_chapters[k] = chapter_dicts
-        with self.stories.destination.joinpath("chapters.json").open("w") as f:
+        with self.stories.destination.joinpath("chapters.json").open("w", encoding='utf-8') as f:
             f.write(json.dumps(all_chapters, ensure_ascii=False))

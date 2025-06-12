@@ -111,6 +111,7 @@ class BackgroundCollection:
             merged[-len(merged)] = path
         return merged
 
+
     def save(self):
         s = json.dumps(
             dict((k, "" if v is None else str(v.relative_to(self.destination.parent))) for k, v in self.extracted.items()),

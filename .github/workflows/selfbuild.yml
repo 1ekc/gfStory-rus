@@ -94,17 +94,6 @@ jobs:
           path: unpack/downloader/output
           key: ${{ steps.restore-gf-downloader-resources.outputs.cache-primary-key }}
 
-      - name: Convert Python Files to UTF-8
-        run: |
-          Get-ChildItem -Path unpack -Recurse -Filter *.py | ForEach-Object {
-              $content = Get-Content -Path $_.FullName -Raw
-              # Добавляем кодировку во все открытия файлов
-              $content = $content -replace 'open\(([^)]+)r\)', 'open($1, encoding="utf-8", mode="r")'
-              $content = $content -replace 'open\(([^)]+)w\)', 'open($1, encoding="utf-8", mode="w")'
-              $content = $content -replace 'open\(([^)]+)\)', 'open($1, encoding="utf-8")'
-              $content | Set-Content -Path $_.FullName -Encoding UTF8 -NoNewline
-          }
-
       - name: Restore Cached Images
         id: restore-image-resources
         uses: actions/cache/restore@v4

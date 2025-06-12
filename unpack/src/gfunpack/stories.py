@@ -494,7 +494,7 @@ class Stories:
 
     def save(self):
         path = self.destination.joinpath('stories.json')
-        with path.open('w') as f:
+        with path.open('w', encoding='utf-8') as f:
             f.write(json.dumps(
                 dict((k, str(p.relative_to(self.destination))) for k, p in self.extracted.items()),
                 ensure_ascii=False,
