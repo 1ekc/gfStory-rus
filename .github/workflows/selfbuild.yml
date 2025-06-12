@@ -19,6 +19,21 @@ jobs:
           git -C unpack/gf-data-rus pull origin main
           git submodule update --init --force --recursive
 
+      - name: Inspect submodule state
+        run: |
+          echo "Current commit in gf-data-rus:"
+          git -C unpack/gf-data-rus rev-parse HEAD
+          echo "File list:"
+          ls -R unpack/gf-data-rus
+          echo "File existence check:"
+          if [ -f "unpack/gf-data-rus/formatted/story_util.hjson" ]; then
+            echo "✅ File exists"
+          else
+            echo "❌ File NOT found"
+            echo "Directory contents:"
+            ls -l unpack/gf-data-rus/formatted/
+          fi
+
       - name: Checkout Repository
         uses: actions/checkout@v4
         with:
