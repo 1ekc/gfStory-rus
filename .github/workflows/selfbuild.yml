@@ -19,7 +19,10 @@ jobs:
           submodules: 'recursive'
           lfs: true
           fetch-depth: 0  # Получаем всю историю коммитов
-
+      - name: Update gf-data-rus
+        run: |
+          Remove-Item -Recurse -Force unpack/gf-data-rus/* -ErrorAction SilentlyContinue
+          git submodule update --init --force --recursive unpack/gf-data-rus
       # Обновляем нужный подмодуль до последней версии main
       - name: Update gf-data-rus Submodule
         run: |
