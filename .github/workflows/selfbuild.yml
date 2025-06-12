@@ -12,8 +12,12 @@ jobs:
         shell: powershell
 
     steps:
-      - name: Update submodules
-        run: git submodule update --init --remote --recursive
+      - name: Force submodule update
+        run: |
+          git submodule sync --recursive
+          git -C unpack/gf-data-rus checkout main
+          git -C unpack/gf-data-rus pull origin main
+          git submodule update --init --force --recursive
 
       - name: Checkout Repository
         uses: actions/checkout@v4
