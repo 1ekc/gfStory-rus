@@ -12,39 +12,61 @@ jobs:
         shell: powershell
 
     steps:
-      # Первый шаг - получение основного репозитория
-      - name: Checkout Repository
+      # Шаг 1: Checkout только основного репозитория (без подмодулей)
+      - name: Checkout Main Repository
         uses: actions/checkout@v4
         with:
-          submodules: 'recursive'
+          submodules: false
           lfs: true
-          fetch-depth: 0  # Получаем всю историю коммитов
-      - name: Update gf-data-rus
+          fetch-depth: 0
+
+      # Шаг 2: Инициализация и обновление подмодулей
+      - name: Initialize and Update Submodules
         run: |
-          Remove-Item -Recurse -Force unpack/gf-data-rus/* -ErrorAction SilentlyContinue
-          git submodule update --init --force --recursive unpack/gf-data-rus
-      # Обновляем нужный подмодуль до последней версии main
-      - name: Update gf-data-rus Submodule
+          # Синхронизируем URL подмодулей
+          git submodule sync --recursive
+          
+          # Инициализируем подмодули
+          git submodule update --init --recursive
+          
+          # Проверяем состояние подмодулей
+          Write-Output "Submodule status after init:"
+          git submodule status
+
+      # Шаг 3: Принудительное обновление проблемного подмодуля
+      - name: Force Update gf-data-rus Submodule
         run: |
-          # Сбрасываем любые локальные изменения в подмодуле
-          git -C unpack/gf-data-rus reset --hard
+          # Удаляем проблемный подмодуль
+          Remove-Item -Recurse -Force unpack/gf-data-rus -ErrorAction SilentlyContinue
           
-          # Убеждаемся, что мы на нужной ветке
-          git -C unpack/gf-data-rus checkout main
+          # Повторно инициализируем только этот подмодуль
+          git submodule update --init --force unpack/gf-data-rus
           
-          # Принудительно обновляем подмодуль
-          git -C unpack/gf-data-rus fetch --all
-          git -C unpack/gf-data-rus reset --hard origin/main
-          git -C unpack/gf-data-rus pull origin main --force
+          # Переходим в директорию подмодуля
+          cd unpack/gf-data-rus
+          
+          # Сбрасываем все изменения
+          git reset --hard
+          git clean -fdx
+          
+          # Переключаемся на нужную ветку
+          git checkout main
+          
+          # Принудительно обновляем
+          git fetch --all
+          git reset --hard origin/main
+          
+          # Возвращаемся в корень
+          cd $env:GITHUB_WORKSPACE
           
           # Проверяем состояние
-          Write-Output "Submodule status:"
+          Write-Output "Submodule status after force update:"
           git submodule status
           
           Write-Output "Latest commit in gf-data-rus:"
           git -C unpack/gf-data-rus log -1 --oneline
 
-      # Проверка наличия файлов в подмодуле
+      # Шаг 4: Проверка наличия файлов
       - name: Verify Submodule Files
         run: |
           $filePath = "unpack/gf-data-rus/formatted/story_util.hjson"
@@ -129,7 +151,6 @@ jobs:
           New-Item -ItemType Directory -Path "downloader/resdata" -Force
           $srcFile = "gf-data-rus/resdata_no_hash.json"
           $destFile = "downloader/resdata/us_resdata.json"
-          # Удаляем старый файл, если существует
           if (Test-Path $destFile) {
               Remove-Item -Path $destFile -Force
           }
@@ -151,12 +172,9 @@ jobs:
       - name: Unpack images
         run: |
           cd unpack
-          # Синхронизация содержимого с перезаписью существующих файлов
           $source = "fixed-data"
           $destination = "gf-data-rus"
-          # Создаем папку назначения, если её нет
           New-Item -ItemType Directory -Path $destination -Force | Out-Null
-          # Копируем с перезаписью
           Get-ChildItem -Path $source | ForEach-Object {
               $destPath = Join-Path -Path $destination -ChildPath $_.Name
               if (Test-Path -Path $destPath) {
@@ -202,7 +220,6 @@ jobs:
       - name: Move Resources
         run: |
           cd unpack
-          # Для каждого файла в assets
           $assets = @(
               "audio/audio.json",
               "images/backgrounds.json",
@@ -217,7 +234,6 @@ jobs:
               }
               Copy-Item -Path $file -Destination "../src/assets" -Force
           }
-          # Для каждой папки
           $folders = @("audio", "images", "stories")
           foreach ($folder in $folders) {
               $dest = "../public/$folder"
@@ -235,8 +251,6 @@ jobs:
         run: |
           pnpm build-index
           pnpm build
-          
-          # Verify build output
           if (Test-Path -Path dist) {
               echo "Build successful! dist folder content:"
               Get-ChildItem -Recurse dist | Format-Table FullName
