@@ -2,7 +2,7 @@ name: Build Documentation
 
 on:
   workflow_dispatch:
-#  push:
+  # push:  # Раскомментируйте при необходимости
 
 permissions:
   contents: write
@@ -11,9 +11,22 @@ jobs:
   documentation:
     runs-on: ubuntu-latest
     steps:
+      # Шаг 1: Клонирование репозитория с подмодулями
       - uses: actions/checkout@v4
         with:
           submodules: 'recursive'
+          submodule-default: 'main'
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      # Шаг 2: Принудительное обновление подмодуля
+      - name: Update and checkout gf-data-rus submodule
+        run: |
+          git submodule update --init --remote --force
+          cd unpack/gf-data-rus && git checkout main && git pull origin main
+          ls -la unpack/gf-data-rus/  # Проверка содержимого
+
+      # Шаг 3: Освобождение места на диске
       - name: Log Disk Space
         run: df -h
       - name: Free Disk Space
@@ -22,6 +35,8 @@ jobs:
           tool-cache: false
           large-packages: false
           swap-storage: false
+
+      # Шаг 4: Установка зависимостей
       - name: Install Dependencies
         run: |
           sudo apt install ffmpeg pngquant imagemagick libfuse2
@@ -33,6 +48,8 @@ jobs:
           mv magick bin
           chmod a+x bin/*
           echo "${PWD}/bin" >> $GITHUB_PATH
+
+      # Шаг 5: Восстановление кэша ресурсов
       - name: Restore Cached Resources
         id: restore-gf-downloader-resources
         uses: actions/cache/restore@v4
@@ -40,6 +57,8 @@ jobs:
           path: |
             unpack/downloader/output
           key: gf-downloader-resources
+
+      # Шаг 6: Настройка Python окружения
       - name: Setup PDM
         uses: pdm-project/setup-pdm@v4
       - name: Setup Python Environment
@@ -48,6 +67,8 @@ jobs:
           pdm install
           source .venv/bin/activate
           pip install -r downloader/requirements.txt
+
+      # Шаг 7: Загрузка ресурсов с использованием данных из подмодуля
       - name: Download Resources
         run: |
           cd unpack
@@ -59,12 +80,16 @@ jobs:
           git apply ../downloader.patch
           zip -j resdata.zip resdata/us_resdata.json
           python downloader.py --downloadres 0 --abname
+
+      # Шаг 8: Кэширование загруженных ресурсов
       - name: Cache Downloaded Resources
         uses: actions/cache/save@v4
         with:
           path: |
             unpack/downloader/output
           key: ${{ steps.restore-gf-downloader-resources.outputs.cache-primary-key }}
+
+      # Шаг 9: Работа с изображениями
       - name: Restore Cached Resources (images)
         id: restore-image-resources
         uses: actions/cache/restore@v4
@@ -85,6 +110,8 @@ jobs:
           path: |
             unpack/images
           key: ${{ steps.restore-image-resources.outputs.cache-primary-key }}
+
+      # Шаг 10: Работа с аудио
       - name: Restore Cached Resources (audio)
         id: restore-audio-resources
         uses: actions/cache/restore@v4
@@ -103,13 +130,19 @@ jobs:
           path: |
             unpack/audio
           key: ${{ steps.restore-audio-resources.outputs.cache-primary-key }}
+
+      # Шаг 11: Распаковка ресурсов
       - name: Unpack resources
         run: |
           cd unpack
           source .venv/bin/activate
           python -m gfunpack downloader/output -o .
+
+      # Шаг 12: Проверка места на диске
       - name: Log Disk Space
         run: df -h
+
+      # Шаг 13: Подготовка ресурсов для сборки
       - name: Move Resources
         run: |
           cd unpack
@@ -117,6 +150,8 @@ jobs:
           mv audio ../public
           mv images ../public
           mv stories ../public
+
+      # Шаг 14: Сборка проекта
       - name: Setup PNPM
         uses: pnpm/action-setup@v4
         with:
@@ -129,10 +164,12 @@ jobs:
         run: |
           pnpm build-index
           pnpm build
+
+      # Шаг 15: Публикация на Cloudflare Pages
       - name: Publish to Cloudflare Pages
         uses: cloudflare/pages-action@v1
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          projectName: ${{ secrets.CLOUDFLARE_PROJECT_NAME  }}
+          projectName: ${{ secrets.CLOUDFLARE_PROJECT_NAME }}
           directory: dist
