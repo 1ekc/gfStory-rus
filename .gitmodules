@@ -4,5 +4,5 @@
   ignore = dirty
 [submodule "unpack/gf-data-rus"]
 	path = unpack/gf-data-rus
-	url = https://github.com/1ekc/gf-data-rus
-    branch = main
+	url = https://github.com/1ekc/gf-data-rus.git
+	branch = main
