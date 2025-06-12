@@ -23,11 +23,16 @@ jobs:
       # Обновляем нужный подмодуль до последней версии main
       - name: Update gf-data-rus Submodule
         run: |
-          # Переключаемся на ветку main в подмодуле
+          # Сбрасываем любые локальные изменения в подмодуле
+          git -C unpack/gf-data-rus reset --hard
+          
+          # Убеждаемся, что мы на нужной ветке
           git -C unpack/gf-data-rus checkout main
           
-          # Получаем последние изменения
-          git -C unpack/gf-data-rus pull origin main
+          # Принудительно обновляем подмодуль
+          git -C unpack/gf-data-rus fetch --all
+          git -C unpack/gf-data-rus reset --hard origin/main
+          git -C unpack/gf-data-rus pull origin main --force
           
           # Проверяем состояние
           Write-Output "Submodule status:"
