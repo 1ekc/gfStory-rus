@@ -463,20 +463,32 @@ class Stories:
             rel_path = str(file.relative_to(directory))
             dest_path = self.destination.joinpath(rel_path)
 
-            # Создаем директории, если нужно
             os.makedirs(dest_path.parent, exist_ok=True)
 
-            # Читаем и обрабатываем файл
-            with file.open('r', encoding='utf-8') as f:
-                content = f.read()
+            # Пробуем разные кодировки
+            for encoding in ['utf-8', 'utf-16', 'gb18030', 'latin1']:
+                try:
+                    with file.open('r', encoding=encoding) as f:
+                        content = f.read()
+                    break
+                except UnicodeDecodeError:
+                    continue
+            else:
+                _warning('Failed to decode file %s with any encoding', file)
+                continue
+
+            try:
                 processed = self._decode(content, rel_path)
+                if not processed:
+                    _warning('Empty content after decoding: %s', file)
+                    continue
 
-            # Сохраняем обработанный файл
-            with dest_path.open('w', encoding='utf-8') as f:
-                f.write(processed or '')
+                with dest_path.open('w', encoding='utf-8') as f:
+                    f.write(processed)
 
-            # Добавляем в список извлеченных файлов
-            self.extracted[rel_path] = dest_path
+                self.extracted[rel_path] = dest_path
+            except Exception as e:
+                _warning('Error processing file %s: %s', file, str(e))
 
     def extract_from_asset(self):
         """Дополняет файлами из asset_textavg.ab (только отсутствующие)"""
