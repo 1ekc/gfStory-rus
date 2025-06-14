@@ -449,6 +449,10 @@ class Stories:
         # Затем дополняем файлами из asset_textavg.ab (только если их нет в gf-data-rus)
         self.extract_from_asset()
 
+        _logger.info("gf-data-rus directory: %s", self.gf_data_directory)
+        if not self.gf_data_directory.exists():
+            _logger.error("gf-data-rus directory does not exist")
+
         _warning('missing audio: %s', self.missing_audio)
 
     def load_from_gf_data_rus(self):
@@ -542,8 +546,8 @@ class Stories:
 
     def _decode(self, content: str, filename: str):
         try:
-            # Помечаем источник в логах
-            source = "gf-data-rus" if "gf-data-rus" in filename else "asset"
+            # Используем абсолютный путь для определения источника
+            source = "gf-data-rus" if "gf-data-rus" in str(self.gf_data_directory) else "asset"
             _logger.debug("Decoding %s (%s)", filename, source)
 
             transpiler = StoryTranspiler(self.resources, script=content, filename=filename)
