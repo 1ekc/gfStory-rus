@@ -427,7 +427,7 @@ class Stories:
     missing_audio: dict[str, set[str]]
 
     def __init__(self, directory: str, destination: str, *, gf_data_directory: str | None = None,
-                 root_destination: str | None = None):
+             root_destination: str | None = None):
         self.directory = utils.check_directory(directory)
         self.destination = utils.check_directory(destination, create=True)
         self.resource_file = self.directory.joinpath('asset_textavg.ab')
@@ -446,89 +446,110 @@ class Stories:
 
         # Сначала загружаем файлы из gf-data-rus
         self.load_from_gf_data_rus()
-
+        # 3. Логирование результатов
+        gf_count = sum(1 for f in self.extracted if "gf-data-rus" in str(f))
+        ab_count = len(self.extracted) - gf_count
+        _logger.info("Loaded: %d from gf-data-rus, %d from asset_textavg.ab", gf_count, ab_count)
         # Затем дополняем файлами из asset_textavg.ab (только если их нет в gf-data-rus)
         self.extract_from_asset()
 
         _warning('missing audio: %s', self.missing_audio)
 
     def load_from_gf_data_rus(self):
-        """Загружает все txt-файлы из gf-data-rus с приоритетом"""
         directory = self.gf_data_directory.joinpath('asset', 'avgtxt')
         if not directory.exists():
-            _warning('gf-data-rus directory not found: %s', directory)
+            _logger.error("gf-data-rus directory not found: %s", directory)
             return
+
+        _logger.info("Loading primary stories from: %s", directory)
 
         for file in directory.glob('**/*.txt'):
             rel_path = str(file.relative_to(directory))
-            dest_path = self.destination.joinpath(rel_path)
 
-            os.makedirs(dest_path.parent, exist_ok=True)
+            # Пропускаем уже загруженные файлы
+            if rel_path in self.extracted:
+                continue
 
-            # Пробуем разные кодировки
-            for encoding in ['utf-8', 'utf-16', 'gb18030', 'latin1']:
+            # Поддержка русских кодировок
+            encodings = ['utf-8-sig', 'utf-8', 'cp1251', 'windows-1251']
+            content = None
+
+            for encoding in encodings:
                 try:
                     with file.open('r', encoding=encoding) as f:
                         content = f.read()
                     break
-                except UnicodeDecodeError:
+                except (UnicodeDecodeError, LookupError):
                     continue
-            else:
-                _warning('Failed to decode file %s with any encoding', file)
+
+            if not content:
+                _logger.warning("Skipping %s: decoding failed", rel_path)
                 continue
 
             try:
                 processed = self._decode(content, rel_path)
-                if not processed:
-                    _warning('Empty content after decoding: %s', file)
-                    continue
+                if processed:
+                    dest_path = self.destination.joinpath(rel_path)
+                    os.makedirs(dest_path.parent, exist_ok=True)
 
-                with dest_path.open('w', encoding='utf-8') as f:
-                    f.write(processed)
+                    with dest_path.open('w', encoding='utf-8') as f:
+                        f.write(processed)
 
-                self.extracted[rel_path] = dest_path
+                    self.extracted[rel_path] = dest_path
+                    _logger.debug("Loaded from gf-data-rus: %s", rel_path)
             except Exception as e:
-                _warning('Error processing file %s: %s', file, str(e))
+                _logger.exception("Error processing %s: %s", rel_path, str(e))
 
     def extract_from_asset(self):
-        """Дополняет файлами из asset_textavg.ab (только отсутствующие)"""
         if not self.resource_file.exists():
-            _warning('asset file not found: %s', self.resource_file)
+            _logger.warning("Asset file not found: %s", self.resource_file)
             return
 
-        assets = UnityPy.load(str(self.resource_file))
-        for o in assets.objects:
-            if o.container is None or o.type.name != 'TextAsset':
-                continue
+        try:
+            assets = UnityPy.load(str(self.resource_file))
+            for o in assets.objects:
+                if o.container is None or o.type.name != 'TextAsset':
+                    continue
 
-            match = _text_asset_regex.match(o.container)
-            if match is None:
-                continue
+                match = _text_asset_regex.match(o.container)
+                if not match:
+                    continue
 
-            name = match.group(1)
-            if name in self.extracted:
-                continue  # Пропускаем, если файл уже есть из gf-data-rus
+                name = match.group(1)
+                # Пропускаем уже загруженные файлы
+                if name in self.extracted:
+                    continue
 
-            text = typing.cast(TextAsset, o.read())
-            content = text.m_Script.tobytes().decode(errors='ignore')
+                text = typing.cast(TextAsset, o.read())
+                content = text.m_Script.tobytes().decode(errors='ignore')
 
-            path = self.destination.joinpath(*name.split('/'))
-            os.makedirs(path.parent, exist_ok=True)
+                if not content:
+                    continue
 
-            with path.open('w', encoding='utf-8') as f:
-                f.write(self._decode(content, name) or '')
+                path = self.destination.joinpath(*name.split('/'))
+                os.makedirs(path.parent, exist_ok=True)
 
-            self.extracted[name] = path
+                with path.open('w', encoding='utf-8') as f:
+                    f.write(self._decode(content, name) or '')
+
+                self.extracted[name] = path
+                _logger.info("Loaded from asset_textavg.ab: %s", name)
+
+        except Exception as e:
+            _logger.exception("Error extracting from asset: %s", str(e))
 
     def _decode(self, content: str, filename: str):
-        transpiler = StoryTranspiler(self.resources, script=content, filename=filename)
-        chunk = transpiler.decode()
-        self.content_tags.update(transpiler.content_tags)
-        self.effect_tags.update(transpiler.effect_tags)
-        for k, v in transpiler.missing_audio.items():
-            if k in self.missing_audio:
-                self.missing_audio[k].update(v)
-        return chunk
+        try:
+            # Помечаем источник в логах
+            source = "gf-data-rus" if "gf-data-rus" in filename else "asset"
+            _logger.debug("Decoding %s (%s)", filename, source)
+
+            transpiler = StoryTranspiler(self.resources, script=content, filename=filename)
+            return transpiler.decode()
+
+        except Exception as e:
+            _logger.error("Decode failed for %s: %s", filename, str(e))
+            return None
 
     def extract_all(self):
         assets = UnityPy.load(str(self.resource_file))
