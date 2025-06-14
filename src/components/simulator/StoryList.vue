@@ -86,17 +86,17 @@ function generateChapterOption(label: ChapterType, name: string): MenuOption & T
 }
 
 const rawData: (MenuOption & TreeSelectOption)[] = [
-  generateChapterOption('main', 'Main Story'),
-  generateChapterOption('event', 'Minor Events'),
-  generateChapterOption('colab', 'Collab Events'),
+  generateChapterOption('main', 'Главная история'),
+  generateChapterOption('event', 'Незначительные события'),
+  generateChapterOption('colab', 'События сотрудничества'),
   generateChapterOption('upgrading', 'Neural Upgrade'),
-  generateChapterOption('bonding', 'Griffin Memories'),
-  generateChapterOption('anniversary', '6th Anniversary'),
-  generateChapterOption('anniversary5', '5th Anniversary'),
-  generateChapterOption('anniversary4', '4th Anniversary'),
-  generateChapterOption('anniversary3', '3rd Anniversary'),
+  generateChapterOption('bonding', 'Воспоминания о Грифоне'),
+  generateChapterOption('anniversary', '6th Юбилей'),
+  generateChapterOption('anniversary5', '5th Юбилей'),
+  generateChapterOption('anniversary4', '4th Юбилей'),
+  generateChapterOption('anniversary3', '3rd Юбилей'),
   generateChapterOption('help', 'Letters \(CN)'),
-  generateChapterOption('skin', 'Skin Stories'),
+  generateChapterOption('skin', 'Истории скинов'),
 ];
 function filterOptions(
   options: (MenuOption & TreeSelectOption)[],

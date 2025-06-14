@@ -26,7 +26,7 @@ def _chapter_starting():
         # description='Автоигра при первом входе в игру',
         description='',
         stories=[
-            Story(name=f'Section {i + 1}', description='',
+            Story(name=f'Часть {i + 1}', description='',
                   files=[f'startavg/start{i}.txt'])
             for i in range(11 + 1)
         ],
@@ -836,7 +836,7 @@ def fill_in_chapter_info(main: list[Chapter], events: list[Chapter]):
     main.remove(chpt_zero)
     assert main[4].description == '4'
     main.insert(5, chpt_zero)
-    mapping = {
+    c = {
         0: 'Seed',
         1: 'Awakening',
         2: 'Echo',

@@ -93,28 +93,27 @@ const showText = ref(false);
         v-model:show="showMenu" :width="Math.min(width * 0.8, 400)"
         placement="left" display-directive="show"
       >
-        <n-drawer-content title="Story Selection" :native-scrollbar="false">
+        <n-drawer-content title="Выбор глав" :native-scrollbar="false">
           <story-list v-model:value="value" set-title-when-selected />
           <slot name="footer" id="footer">
             <p>
-              补剧情的顺序可以参考
-              <a href="https://nga.178.com/read.php?tid=37662006&rand=406" target="_blank">
-                [剧情] [整理] 少女前线云玩家补剧情指北
-              </a>。
-              剧情模拟器的代码可以在
-              <a href="https://github.com/gudzpoz/gfStory" target="_blank">GitHub</a>
-              上找到。
-              如果遇到了什么问题，欢迎到 GitHub 上提问题或者直接到论坛里的
-              <a href="https://gf2-bbs.sunborngame.com/threadInfo?id=4511" target="_blank">
-                少女前线一代剧情模拟器发布！（再次）
-              </a>
-              这个发布贴里面评论提。
+              Это реворк оригинального сайта с сюжетом
+              <a href="https://gfstory-en.pages.dev/" target="_blank">GFL</a>
+              на английском。
             </p>
             <p>
-              目前还有部分剧情没有标好对应的标题（主要是一些局内的点位剧情），
-              这个我正在慢慢对照着录屏视频以及常驻活动来手动汇总标注，但是进展速度有限……
-              （我也会尽量删掉一些只是游玩提示的无剧情内容的点位事件。）
-              如果有人知道某些未标注事件的具体关卡和位点，欢迎直接告诉我！
+              Код симулятора сюжета можно найти на
+              <a href="https://github.com/gudzpoz/gfStory" target="_blank">GitHub</a>
+              。
+              Если у вас возникнут какие-либо проблемы, не стесняйтесь задавать вопросы на GitHub или непосредственно в форумах по адресу
+              <a href="https://gf2-bbs.sunborngame.com/threadInfo?id=4511" target="_blank">
+              </a>
+            </p>
+            <p>
+              Некоторые эпизоды все еще не имеют соответствующих названий (в основном это эпизоды, связанные с точкой Бюро).
+              Это то, что я постепенно маркирую вручную, сопоставляя записанные видео и активность пользователей, но скорость прогресса ограничена .......
+              (Я также постараюсь убрать некоторые события, которые являются лишь намеками на путешествия и не несут никакой сюжетной нагрузки).
+              Если кто-то знает точные уровни и местоположения некоторых не обозначенных событий, не стесняйтесь сообщить мне об этом напрямую!
             </p>
           </slot>
         </n-drawer-content>

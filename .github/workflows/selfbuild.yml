@@ -2,7 +2,7 @@ name: Build and Deploy Documentation
 
 on:
   workflow_dispatch:
-  push:
+#  push:
 
 jobs:
   documentation:
