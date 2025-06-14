@@ -446,10 +446,6 @@ class Stories:
 
         # Сначала загружаем файлы из gf-data-rus
         self.load_from_gf_data_rus()
-        # 3. Логирование результатов
-        gf_count = sum(1 for f in self.extracted if "gf-data-rus" in str(f))
-        ab_count = len(self.extracted) - gf_count
-        _logger.info("Loaded: %d from gf-data-rus, %d from asset_textavg.ab", gf_count, ab_count)
         # Затем дополняем файлами из asset_textavg.ab (только если их нет в gf-data-rus)
         self.extract_from_asset()
 
@@ -465,15 +461,21 @@ class Stories:
 
         for file in directory.glob('**/*.txt'):
             rel_path = str(file.relative_to(directory))
-
-            # Пропускаем уже загруженные файлы
-            if rel_path in self.extracted:
+            if rel_path in self.extracted:  # Проверяем по имени файла
                 continue
 
             # Поддержка русских кодировок
-            encodings = ['utf-8-sig', 'utf-8', 'cp1251', 'windows-1251']
+            encodings = [
+                'utf-8-sig',
+                'utf-8',
+                'cp1251',
+                'windows-1251',
+                'utf-16-le',  # Для полной поддержки
+                'utf-16'
+            ]
             content = None
 
+            # Чтение файла
             for encoding in encodings:
                 try:
                     with file.open('r', encoding=encoding) as f:
@@ -495,6 +497,7 @@ class Stories:
                     with dest_path.open('w', encoding='utf-8') as f:
                         f.write(processed)
 
+                    # ДОБАВЛЯЕМ ТОЛЬКО ПОСЛЕ УСПЕШНОЙ ЗАПИСИ!
                     self.extracted[rel_path] = dest_path
                     _logger.debug("Loaded from gf-data-rus: %s", rel_path)
             except Exception as e:
@@ -516,8 +519,7 @@ class Stories:
                     continue
 
                 name = match.group(1)
-                # Пропускаем уже загруженные файлы
-                if name in self.extracted:
+                if name in self.extracted:  # Проверяем по имени файла
                     continue
 
                 text = typing.cast(TextAsset, o.read())
