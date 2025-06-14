@@ -464,22 +464,25 @@ class Stories:
         _logger.info("Loading primary stories from: %s", directory)
 
         for file in directory.glob('**/*.txt'):
-            rel_path = str(file.relative_to(directory))
-            if rel_path in self.extracted:  # Проверяем по имени файла
+            # Нормализуем путь для кроссплатформенной совместимости
+            rel_path = str(file.relative_to(directory)).replace('\\', '/')
+            if rel_path in self.extracted:
                 continue
 
             # Поддержка русских кодировок
             encodings = [
-                'utf-8-sig',
-                'utf-8',
-                'cp1251',
-                'windows-1251',
-                'utf-16-le',  # Для полной поддержки
-                'utf-16'
+                'utf-8-sig',  # UTF-8 с BOM
+                'utf-8',  # Стандартный UTF-8
+                'cp1251',  # Windows Cyrillic
+                'windows-1251',  # Альтернативное название
+                'iso-8859-5',  # Latin/Cyrillic
+                'koi8-r',  # Русская KOI8-R
+                'mac_cyrillic',  # Mac Cyrillic
+                'utf-16-le',  # UTF-16 Little Endian
+                'utf-16'  # UTF-16 с определением порядка байт
             ]
             content = None
 
-            # Чтение файла
             for encoding in encodings:
                 try:
                     with file.open('r', encoding=encoding) as f:
@@ -488,7 +491,7 @@ class Stories:
                 except (UnicodeDecodeError, LookupError):
                     continue
 
-            if not content:
+            if content is None:
                 _logger.warning("Skipping %s: decoding failed", rel_path)
                 continue
 
@@ -501,7 +504,6 @@ class Stories:
                     with dest_path.open('w', encoding='utf-8') as f:
                         f.write(processed)
 
-                    # ДОБАВЛЯЕМ ТОЛЬКО ПОСЛЕ УСПЕШНОЙ ЗАПИСИ!
                     self.extracted[rel_path] = dest_path
                     _logger.debug("Loaded from gf-data-rus: %s", rel_path)
             except Exception as e:
@@ -523,7 +525,10 @@ class Stories:
                     continue
 
                 name = match.group(1)
-                if name in self.extracted:  # Проверяем по имени файла
+                # Нормализуем путь для кроссплатформенной совместимости
+                name = name.replace('\\', '/')
+                if name in self.extracted:  # Уже загружен из gf-data-rus
+                    _logger.debug("Skipping %s (already from gf-data-rus)", name)
                     continue
 
                 text = typing.cast(TextAsset, o.read())

@@ -565,11 +565,11 @@ def chapter_difficulty(id: int, description: str):
                       91, 92, 93, 94, 126, 127, 128, 129, 162, 163, 164, 165, 166, 167,
                       168, 169, 361, 362, 363, 364, 450, 451, 452, 453]
     if id in normal_chapters:
-        return 'Normal'
+        return 'Обычная'
     elif id in emergency_chapters:
-        return 'Emergency'
+        return 'Срочная'
     elif id in night_chapters:
-        return 'Night Battle'
+        return 'Ночной бой'
     else:
         return description
 

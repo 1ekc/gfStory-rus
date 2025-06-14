@@ -157,8 +157,23 @@ class Chapters:
         self.all_chapters = self.categorize_stories()
 
     def _fetch(self, file: str, item_type: typing.Type[T]) -> list[T]:
-        with self.stories.gf_data_directory.joinpath("formatted", file).open() as f:
-            data = hjson.loads(f.read())
+        # Пробуем сначала в formatted, затем в stc
+        formatted_path = self.stories.gf_data_directory.joinpath("formatted", file)
+        stc_path = self.stories.gf_data_directory.joinpath("stc", file.replace('.hjson', '.json'))
+
+        path = None
+        if formatted_path.exists():
+            path = formatted_path
+        elif stc_path.exists():
+            path = stc_path
+        else:
+            raise FileNotFoundError(f"File {file} not found in formatted or stc directories")
+
+        with path.open(encoding='utf-8') as f:
+            if path.suffix == '.hjson':
+                data = hjson.load(f)
+            else:  # .json
+                data = json.load(f)
             assert isinstance(data, list)
             return [item_type(**item) for item in data]
 
@@ -463,5 +478,6 @@ class Chapters:
         for k, chapters in self.all_chapters.items():
             chapter_dicts = [dataclasses.asdict(c) for c in chapters]
             all_chapters[k] = chapter_dicts
+        os.makedirs(self.stories.destination.parent, exist_ok=True)
         with self.stories.destination.joinpath("chapters.json").open("w", encoding='utf-8') as f:
-            f.write(json.dumps(all_chapters, ensure_ascii=False))
+            f.write(json.dumps(all_chapters, ensure_ascii=False, indent=2))
