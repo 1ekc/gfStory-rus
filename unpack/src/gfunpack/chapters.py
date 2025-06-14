@@ -3,6 +3,7 @@ import json
 import logging
 import re
 import typing
+import os
 from dataclasses_json import Undefined, dataclass_json
 
 import hjson
@@ -456,7 +457,7 @@ class Chapters:
                     story.files = list(
                         filter(
                             lambda f: (f if isinstance(f, str) else f[0])
-                            in self.stories.extracted,
+                                      in self.stories.extracted,
                             story.files,
                         )
                     )
@@ -478,6 +479,9 @@ class Chapters:
         for k, chapters in self.all_chapters.items():
             chapter_dicts = [dataclasses.asdict(c) for c in chapters]
             all_chapters[k] = chapter_dicts
-        os.makedirs(self.stories.destination.parent, exist_ok=True)
+
+        # Создаем целевую директорию
+        os.makedirs(self.stories.destination, exist_ok=True)
+
         with self.stories.destination.joinpath("chapters.json").open("w", encoding='utf-8') as f:
-            f.write(json.dumps(all_chapters, ensure_ascii=False, indent=2))
+            f.write(json.dumps(all_chapters, ensure_ascii=False))
