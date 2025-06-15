@@ -432,36 +432,43 @@ class Stories:
         self.destination = utils.check_directory(destination, create=True)
         self.resource_file = self.directory.joinpath('asset_textavg.ab')
         root = self.destination.parent if root_destination is None else pathlib.Path(root_destination)
+
+        # Ресурсы всегда берутся из основного каталога
         self.resources = StoryResources(
             root.joinpath('audio', 'audio.json'),
             root.joinpath('images', 'backgrounds.json'),
             root.joinpath('images', 'characters.json'),
         )
-        self.gf_data_directory = root.joinpath('gf-data-rus') if gf_data_directory is None else pathlib.Path(
-            gf_data_directory)
+
+        # Только для текстовых файлов используем gf-data-rus
+        self.gf_data_directory = pathlib.Path(gf_data_directory) if gf_data_directory else None
+
         self.content_tags = set()
         self.effect_tags = set()
         self.missing_audio = {'bgm': set(), 'se': set()}
         self.extracted = {}
 
-        # Сначала загружаем файлы из gf-data-rus
-        self.load_from_gf_data_rus()
-        # Затем дополняем файлами из asset_textavg.ab (только если их нет в gf-data-rus)
+        # Загружаем только текстовые файлы из gf-data-rus
+        if self.gf_data_directory and self.gf_data_directory.exists():
+            self.load_txt_from_gf_data_rus()
+
+        # Затем дополняем файлами из asset_textavg.ab
         self.extract_from_asset()
 
         _logger.info("gf-data-rus directory: %s", self.gf_data_directory)
-        if not self.gf_data_directory.exists():
+        if self.gf_data_directory and not self.gf_data_directory.exists():
             _logger.error("gf-data-rus directory does not exist")
 
         _warning('missing audio: %s', self.missing_audio)
 
-    def load_from_gf_data_rus(self):
+    def load_txt_from_gf_data_rus(self):
+        """Загружаем только текстовые файлы сценариев из gf-data-rus"""
         directory = self.gf_data_directory.joinpath('asset', 'avgtxt')
         if not directory.exists():
-            _logger.error("gf-data-rus directory not found: %s", directory)
+            _logger.error("avgtxt directory not found in gf-data-rus: %s", directory)
             return
 
-        _logger.info("Loading primary stories from: %s", directory)
+        _logger.info("Loading stories from gf-data-rus: %s", directory)
 
         for file in directory.glob('**/*.txt'):
             # Нормализуем путь для кроссплатформенной совместимости

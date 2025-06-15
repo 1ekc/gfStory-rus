@@ -145,8 +145,10 @@ class Chapters:
 
     def __init__(self, stories: Stories) -> None:
         self.stories = stories
-        self.chapters = self._fetch(_chapter_info_file, ChapterInfo)
-        self.main_events = self._fetch(_event_info_file, EventStoryInfo)
+        # Используем основной каталог для ресурсов
+        resource_root = stories.destination.parent
+        self.chapters = self._fetch(resource_root, _chapter_info_file, ChapterInfo)
+        self.main_events = self._fetch(resource_root, _event_info_file, EventStoryInfo)
         self.missions = self._fetch(_mission_info_file, MissionInfo)
         self.bonding_chapters = self._fetch(_bonding_chapter_file, BondingChapter)
         self.bonding_events = self._fetch(_bonding_info_file, BondingEvent)
@@ -157,10 +159,10 @@ class Chapters:
         self.skin_info, self.skins = self._fetch_and_index(_skins_info_file)
         self.all_chapters = self.categorize_stories()
 
-    def _fetch(self, file: str, item_type: typing.Type[T]) -> list[T]:
+    def _fetch(self, root: pathlib.Path, file: str, item_type: typing.Type[T]) -> list[T]:
         # Пробуем сначала в formatted, затем в stc
-        formatted_path = self.stories.gf_data_directory.joinpath("formatted", file)
-        stc_path = self.stories.gf_data_directory.joinpath("stc", file.replace('.hjson', '.json'))
+        formatted_path = root.joinpath("formatted", file)
+        stc_path = root.joinpath("stc", file.replace('.hjson', '.json'))
 
         path = None
         if formatted_path.exists():

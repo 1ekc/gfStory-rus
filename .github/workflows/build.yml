@@ -107,7 +107,7 @@ jobs:
         run: |
           cd unpack
           source .venv/bin/activate
-          python -m gfunpack downloader/output -o .
+          python -m gfunpack downloader/output -o . --gf-data-rus gf-data-rus
       - name: Log Disk Space
         run: df -h
       - name: Move Resources
