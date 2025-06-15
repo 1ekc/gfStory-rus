@@ -1,9 +1,12 @@
 import argparse
 import os
 import pathlib
+import logging
 
 from gfunpack import audio, backgrounds, chapters, characters, mapper, prefabs, stories
 
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger('gfunpack')
 
 parser = argparse.ArgumentParser()
 parser.add_argument('dir')
@@ -30,6 +33,11 @@ character_mapper.write_indices()
 
 bgm = audio.BGM(downloaded, str(destination.joinpath('audio')), concurrency=cpus, clean=not args.no_clean)
 bgm.save()
+
+print(f"GF Data RUS path: {args.gf_data_rus}")
+print(f"Path exists: {os.path.exists(args.gf_data_rus)}")
+print(f"Files in gf-data-rus: {os.listdir(args.gf_data_rus)}")
+print(f"Files in gf-data-rus/asset/avgtxt: {os.listdir(os.path.join(args.gf_data_rus, 'asset', 'avgtxt'))}")
 
 ss = stories.Stories(
     downloaded,

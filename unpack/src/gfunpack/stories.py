@@ -450,18 +450,19 @@ class Stories:
 
         # Загружаем только текстовые файлы из gf-data-rus
         if self.gf_data_directory and self.gf_data_directory.exists():
-            self.load_txt_from_gf_data_rus()  # Исправлено имя метода
-        else:
-            _logger.warning("gf-data-rus directory not provided or does not exist")
+            self.load_txt_from_gf_data_rus()
+            _logger.info("Loaded %d Russian story files", len(self.extracted))
 
-        # Затем дополняем файлами из asset_textavg.ab
+            # Затем дополняем английскими файлами (только отсутствующие)
         self.extract_from_asset()
+        _logger.info("Total story files after extraction: %d", len(self.extracted))
 
         _logger.info("gf-data-rus directory: %s", self.gf_data_directory)
         if self.gf_data_directory and not self.gf_data_directory.exists():
             _logger.error("gf-data-rus directory does not exist")
 
         _warning('missing audio: %s', self.missing_audio)
+
 
     def load_txt_from_gf_data_rus(self):
         """Загружаем только текстовые файлы сценариев из gf-data-rus"""
@@ -470,11 +471,16 @@ class Stories:
             _logger.error("avgtxt directory not found in gf-data-rus: %s", directory)
             return
 
-        _logger.info("Loading stories from gf-data-rus: %s", directory)
+        _logger.info("Loading Russian stories from: %s", directory)
 
         for file in directory.glob('**/*.txt'):
-            # Нормализуем путь
-            rel_path = str(file.relative_to(directory)).replace('\\', '/')
+            # Получаем относительный путь
+            try:
+                rel_path = str(file.relative_to(directory)).replace('\\', '/')
+            except ValueError:
+                rel_path = file.name
+
+            # Пропускаем уже загруженные файлы
             if rel_path in self.extracted:
                 continue
 
@@ -560,6 +566,15 @@ class Stories:
 
     def _decode(self, content: str, filename: str):
         try:
+            # Проверяем наличие русского текста
+            cyrillic_chars = sum(1 for c in content if 'а' <= c <= 'я' or 'А' <= c <= 'Я')
+            if cyrillic_chars > 10:  # Пороговое значение
+                _logger.info("Russian text detected in %s (%d Cyrillic chars)",
+                            filename, cyrillic_chars)
+            elif any('a' <= c <= 'z' or 'A' <= c <= 'Z' for c in content):
+                _logger.warning("English text detected in %s! First 100 chars: %s",
+                               filename, content[:100].replace('\n', ' '))
+
             # Используем абсолютный путь для определения источника
             source = "gf-data-rus" if "gf-data-rus" in str(self.gf_data_directory) else "asset"
             _logger.debug("Decoding %s (%s)", filename, source)
