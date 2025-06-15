@@ -450,7 +450,9 @@ class Stories:
 
         # Загружаем только текстовые файлы из gf-data-rus
         if self.gf_data_directory and self.gf_data_directory.exists():
-            self.load_txt_from_gf_data_rus()
+            self.load_txt_from_gf_data_rus()  # Исправлено имя метода
+        else:
+            _logger.warning("gf-data-rus directory not provided or does not exist")
 
         # Затем дополняем файлами из asset_textavg.ab
         self.extract_from_asset()
@@ -471,7 +473,7 @@ class Stories:
         _logger.info("Loading stories from gf-data-rus: %s", directory)
 
         for file in directory.glob('**/*.txt'):
-            # Нормализуем путь для кроссплатформенной совместимости
+            # Нормализуем путь
             rel_path = str(file.relative_to(directory)).replace('\\', '/')
             if rel_path in self.extracted:
                 continue
