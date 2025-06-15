@@ -1,10 +1,10 @@
+import os
+import pathlib
 import dataclasses
 import json
 import logging
 import re
 import typing
-import os
-import pathlib
 from dataclasses_json import Undefined, dataclass_json
 
 import hjson
@@ -39,7 +39,6 @@ _skins_info_file = "skin.hjson"
 _upgrade_info_file = "mindupdate_story_info.hjson"
 
 _chapter_file_name_regex = re.compile("^(-?\\d+)-")
-
 
 T = typing.TypeVar("T")
 
@@ -122,17 +121,11 @@ class Chapters:
     stories: Stories
 
     chapters: list[ChapterInfo]
-
     main_events: list[EventStoryInfo]
-
     missions: list[MissionInfo]
-
     bonding_chapters: list[BondingChapter]
-
     bonding_events: list[BondingEvent]
-
     all_chapters: dict[str, list[Chapter]]
-
     upgrading_events: list[UpgradingEvent]
 
     gun_info: list[dict[str, typing.Any]]
@@ -146,29 +139,35 @@ class Chapters:
 
     def __init__(self, stories: Stories) -> None:
         self.stories = stories
+
         # Используем основной каталог для ресурсов
         resource_root = stories.destination.parent
-        self.chapters = self._fetch(resource_root, _chapter_info_file, ChapterInfo)
-        self.main_events = self._fetch(resource_root, _event_info_file, EventStoryInfo)
+
+        self.chapters = self._fetch(_chapter_info_file, ChapterInfo)
+        self.main_events = self._fetch(_event_info_file, EventStoryInfo)
         self.missions = self._fetch(_mission_info_file, MissionInfo)
         self.bonding_chapters = self._fetch(_bonding_chapter_file, BondingChapter)
         self.bonding_events = self._fetch(_bonding_info_file, BondingEvent)
         self.upgrading_events = self._fetch(_upgrade_info_file, UpgradingEvent)
+
         self.gun_info, self.guns = self._fetch_and_index(_gun_info_file)
         self.npc_info, self.npcs = self._fetch_and_index(_npc_info_file)
         self.sangvis_info, self.sangvis = self._fetch_and_index(_sangvis_info_file)
         self.skin_info, self.skins = self._fetch_and_index(_skins_info_file)
+
         self.all_chapters = self.categorize_stories()
 
     def _fetch(self, file: str, item_type: typing.Type[T]) -> list[T]:
-        # Используем путь к подмодулю
-        path = self.stories.gf_data_directory.joinpath("formatted", file)
-        if not path.exists():
-            # Пробуем альтернативный путь stc
-            path = self.stories.gf_data_directory.joinpath("stc", file.replace('.hjson', '.json'))
+        # Пробуем сначала в formatted, затем в stc
+        formatted_path = self.stories.gf_data_directory.joinpath("formatted", file)
+        stc_path = self.stories.gf_data_directory.joinpath("stc", file.replace('.hjson', '.json'))
 
-        # Добавить проверку существования файла
-        if not path.exists():
+        path = None
+        if formatted_path.exists():
+            path = formatted_path
+        elif stc_path.exists():
+            path = stc_path
+        else:
             raise FileNotFoundError(f"File {file} not found in formatted or stc directories")
 
         with path.open(encoding='utf-8') as f:
