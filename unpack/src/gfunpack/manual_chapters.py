@@ -837,20 +837,20 @@ def fill_in_chapter_info(main: list[Chapter], events: list[Chapter]):
     assert main[4].description == '4'
     main.insert(5, chpt_zero)
     c = {
-        0: 'Seed',
-        1: 'Awakening',
-        2: 'Echo',
-        3: 'Silence',
-        4: 'Message',
-        5: 'Kindling',
-        6: 'Comet',
-        7: 'Partner',
-        8: 'Spark',
-        9: 'Lost',
-        10: 'Purgatory',
-        11: 'The Hunt',
-        12: 'Gasp',
-        13: 'The Oblivione',
+        0: 'Семя',
+        1: 'Пробуждение',
+        2: 'Эхо',
+        3: 'Тишина',
+        4: 'Сообщение',
+        5: 'Разжигание',
+        6: 'Комета',
+        7: 'Партнер',
+        8: 'Искра',
+        9: 'Потеря',
+        10: 'Португория',
+        11: 'Охота',
+        12: 'Вздох',
+        13: 'Обливион',
     }
     for c in main:
         c.description = ''
