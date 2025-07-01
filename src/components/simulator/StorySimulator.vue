@@ -5,7 +5,7 @@ import {
   NConfigProvider,
   NDrawer, NDrawerContent,
   NModal, NModalProvider,
-  darkTheme, zhCN,
+  darkTheme, ruRU,
   type MenuInst,
 } from 'naive-ui';
 import {
@@ -22,6 +22,8 @@ import {
 const chunk = ref('');
 const html = ref('');
 const loading = ref(false);
+const storyList = ref<{value: string, label: string}[]>([]);
+
 async function switchStory(path: string) {
   loading.value = true;
   try {
@@ -31,7 +33,6 @@ async function switchStory(path: string) {
       allowDangerousHtml: true,
       extensions: [directive()],
       htmlExtensions: [directiveHtml({
-        // eslint-disable-next-line func-names
         '*': function (d) {
           this.tag('<span');
           this.tag(` class="${d.name} directive"`);
@@ -45,13 +46,26 @@ async function switchStory(path: string) {
     loading.value = false;
   } catch (e) {
     loading.value = false;
+    console.error('Error loading story:', e);
   }
 }
 
 const showMenu = ref(false);
-
 const value = ref('');
 const menu = ref<MenuInst>();
+
+function onStoryEnded() {
+  const currentIndex = storyList.value.findIndex(s => s.value === value.value);
+  if (currentIndex >= 0 && currentIndex < storyList.value.length - 1) {
+    const nextStory = storyList.value[currentIndex + 1];
+    value.value = nextStory.value;
+  }
+}
+
+function saveProgress(storyId: string) {
+  localStorage.setItem('storyProgress', storyId);
+}
+
 watch(() => value.value, (file) => {
   menu.value?.showOption(file);
   const url = new URL(window.location.toString());
@@ -61,6 +75,7 @@ watch(() => value.value, (file) => {
   }
   showMenu.value = false;
   switchStory(`${STORY_PATH_PREFIX}${file}`);
+  saveProgress(file);
 });
 
 function updateFromLocation() {
@@ -71,9 +86,26 @@ function updateFromLocation() {
   }
 }
 
-// StorySimulator should never get unmounted, so not registering unmount hooks to remove listeners.
+async function loadStoryList() {
+  try {
+    const response = await fetch('/stories.json');
+    storyList.value = await response.json();
+
+    // Восстановление прогресса
+    const savedProgress = localStorage.getItem('storyProgress');
+    if (savedProgress && storyList.value.some(s => s.value === savedProgress)) {
+      value.value = savedProgress;
+    } else if (storyList.value.length > 0) {
+      value.value = storyList.value[0].value;
+    }
+  } catch (e) {
+    console.error('Error loading story list:', e);
+  }
+}
+
 const width = ref(window.innerWidth);
 onMounted(() => {
+  loadStoryList();
   updateFromLocation();
   window.addEventListener('popstate', () => {
     updateFromLocation();
@@ -87,41 +119,33 @@ const showText = ref(false);
 </script>
 
 <template>
-  <n-config-provider :theme="darkTheme" :locale="zhCN">
+  <n-config-provider :theme="darkTheme" :locale="ruRU">
     <n-modal-provider>
       <n-drawer
         v-model:show="showMenu" :width="Math.min(width * 0.8, 400)"
         placement="left" display-directive="show"
       >
         <n-drawer-content title="Выбор глав" :native-scrollbar="false">
-          <story-list v-model:value="value" set-title-when-selected />
+          <story-list v-model:value="value" :options="storyList" set-title-when-selected />
           <slot name="footer" id="footer">
             <p>
               Это реворк оригинального сайта с сюжетом
               <a href="https://gfstory-en.pages.dev/" target="_blank">GFL</a>
-              на английском。
+              на английском.
             </p>
             <p>
               Код симулятора сюжета можно найти на
-              <a href="https://github.com/gudzpoz/gfStory" target="_blank">GitHub</a>
-              。
-              Если у вас возникнут какие-либо проблемы, не стесняйтесь задавать вопросы на GitHub или непосредственно в форумах по адресу
-              <a href="https://gf2-bbs.sunborngame.com/threadInfo?id=4511" target="_blank">
-              </a>
-            </p>
-            <p>
-              Некоторые эпизоды еще не переведены. Так же не сделана правильная последовательность (глава 0 находится не в начале)
+              <a href="https://github.com/gudzpoz/gfStory" target="_blank">GitHub</a>.
             </p>
           </slot>
         </n-drawer-content>
       </n-drawer>
       <story-teller
         menu-button text-button
-        @menu="showMenu = true" @text="showText = true"
+        @menu="showMenu = true" @text="showText = true" @ended="onStoryEnded"
         :chunk="chunk"
         :loading="loading"
-      >
-      </story-teller>
+      />
       <n-modal
         v-model:show="showText" preset="card" size="huge"
         style="max-width: 90vw; max-height: 90vh; overflow-y: auto"

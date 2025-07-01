@@ -1,7 +1,7 @@
 [
   {
     id: 1
-    name: Chapter 0
+    name: Глава 0
     type: 1
     tag: EP.
     order: 1
@@ -9,7 +9,7 @@
   {
     id: 2
     story_campaign_id: "1"
-    name: Awakening
+    name: Пробуждение
     chapter: "1"
     type: 1
     tag: EP.
@@ -18,7 +18,7 @@
   {
     id: 3
     story_campaign_id: "2"
-    name: Echo
+    name: Эхо
     chapter: "2"
     type: 1
     tag: EP.
@@ -27,7 +27,7 @@
   {
     id: 4
     story_campaign_id: "3"
-    name: Silence
+    name: Тишина
     chapter: "3"
     type: 1
     tag: EP.
@@ -36,7 +36,7 @@
   {
     id: 5
     story_campaign_id: "4"
-    name: Message
+    name: Сообщение
     chapter: "4"
     type: 1
     tag: EP.
@@ -45,7 +45,7 @@
   {
     id: 6
     story_campaign_id: "5"
-    name: Kindling
+    name: Разжигание
     chapter: "5"
     type: 1
     tag: EP.
@@ -54,7 +54,7 @@
   {
     id: 7
     story_campaign_id: "-1"
-    name: Operation Cube
+    name: Операция "Куб"
     chapter: "5.5"
     type: 2
     tag: EP.

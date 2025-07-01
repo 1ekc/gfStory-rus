@@ -12,16 +12,15 @@ import { StoryInterpreter, type SpriteImage, type Tags } from '../../story/inter
 
 const props = defineProps<{
   chunk?: string,
-
   loading?: boolean,
   menuButton?: boolean,
   textButton?: boolean,
 }>();
 
-// eslint-disable-next-line no-spaced-func
 const emit = defineEmits<{
   (event: 'menu'): void,
   (event: 'text'): void,
+  (event: 'ended'): void,
 }>();
 
 const story = new StoryInterpreter();
@@ -166,6 +165,7 @@ function nextLine(option?: number) {
   }
   text.value = '<i>End of story</i>';
   ended.value = true;
+  emit('ended');
 }
 
 async function getGlobalStory() {
@@ -196,13 +196,11 @@ async function updateStory(chunk?: string) {
   await story.reload(s);
   preloading.value = false;
   auto.value = false;
-  // autoSpeed.value = 1; // Do not reset autoSpeed
   nextLine();
 }
 updateStory(props.chunk);
 watch(() => props.chunk, updateStory);
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 let autoHandle: any = 0;
 function scheduleAuto() {
   if (auto.value) {
@@ -227,16 +225,16 @@ onUnmounted(() => {
     @animation-finished="scheduleAuto" :loading="loading || preloading" :history="showingHistory"
     :text-height="showingHistory ? 'calc(100vh - 6em - 24px)' : undefined">
     <button v-if="menuButton" @click="emit('menu')">
-      <menu-filled></menu-filled><span>Menu</span>
+      <menu-filled></menu-filled><span>Меню</span>
     </button>
     <button v-if="textButton" @click="emit('text')">
-      <text-snippet-filled></text-snippet-filled><span>Script</span>
+      <text-snippet-filled></text-snippet-filled><span>Текст</span>
     </button>
     <button @click="showHistory">
-      <history-filled></history-filled><span>Log</span>
+      <history-filled></history-filled><span>История</span>
     </button>
     <button v-if="!ended" @click="auto = !auto" :class="{ toggled: auto }">
-      <play-arrow-filled></play-arrow-filled><span>Auto</span>
+      <play-arrow-filled></play-arrow-filled><span>Авто</span>
     </button>
     <div class="auto-speed">
       <span v-if="auto">{{ autoSpeed }}</span>
@@ -276,15 +274,11 @@ onUnmounted(() => {
 </style>
 
 <style scoped>
-/* https://css-tricks.com/styling-cross-browser-compatible-range-inputs-css/ */
 input[type=range] {
   -webkit-appearance: none;
-  /* Hides the slider so that custom slider can be made */
   appearance: none;
   width: 100%;
-  /* Specific width is required for Firefox. */
   background: transparent;
-  /* Otherwise white in Chrome */
 }
 
 input[type=range]::-webkit-slider-thumb {
@@ -292,23 +286,17 @@ input[type=range]::-webkit-slider-thumb {
 }
 
 input[type=range]:focus {
-  /* Removes the blue border.
-   * You should probably do some kind of focus styling for accessibility reasons though.
-   */
   outline: none;
 }
 
 input[type=range]::-ms-track {
   width: 100%;
   cursor: pointer;
-
-  /* Hides the slider so custom styles can be added */
   background: transparent;
   border-color: transparent;
   color: transparent;
 }
 
-/* Special styling for WebKit/Blink */
 input[type=range]::-webkit-slider-thumb {
   -webkit-appearance: none;
   border: 1px solid #000000;
@@ -317,13 +305,10 @@ input[type=range]::-webkit-slider-thumb {
   border-radius: 2px;
   background: #ffffff;
   cursor: pointer;
-  /* You need to specify a margin in Chrome, but in Firefox and IE it is automatic */
   margin-top: -14px;
   box-shadow: 1px 1px 1px #000000, 0px 0px 1px #0d0d0d;
-  /* Add cool effects to your sliders! */
 }
 
-/* All the same stuff for Firefox */
 input[type=range]::-moz-range-thumb {
   box-shadow: 1px 1px 1px #000000, 0px 0px 1px #0d0d0d;
   border: 1px solid #000000;
@@ -334,7 +319,6 @@ input[type=range]::-moz-range-thumb {
   cursor: pointer;
 }
 
-/* All the same stuff for IE */
 input[type=range]::-ms-thumb {
   box-shadow: 1px 1px 1px #000000, 0px 0px 1px #0d0d0d;
   border: 1px solid #000000;
