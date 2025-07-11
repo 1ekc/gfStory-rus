@@ -51,7 +51,8 @@ jobs:
           swap-storage: false
       - name: Install Dependencies
         run: |
-          sudo apt install ffmpeg pngquant imagemagick libfuse2
+          sudo apt-get update
+          sudo apt-get install -y --fix-missing ffmpeg pngquant imagemagick libfuse2
           wget https://github.com/vgmstream/vgmstream-releases/releases/download/nightly/vgmstream-linux-cli.tar.gz
           tar -zxf vgmstream-linux-cli.tar.gz
           mkdir bin
