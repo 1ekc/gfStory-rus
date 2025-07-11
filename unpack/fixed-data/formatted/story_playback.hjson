@@ -72,7 +72,7 @@
   {
     id: 9
     story_campaign_id: "7"
-    name: Partner
+    name: Партнер
     chapter: "7"
     type: 1
     tag: EP.
@@ -81,7 +81,7 @@
   {
     id: 10
     story_campaign_id: "-2,-3,-4,-5,-23"
-    name: Arctic Warfare
+    name: Арктическая война
     chapter: "7.5"
     type: 2
     tag: EP.
@@ -90,7 +90,7 @@
   {
     id: 11
     story_campaign_id: "-7"
-    name: Blindfold Theorem
+    name: Теорема о закрытых глазах
     chapter: "7.75"
     type: 2
     tag: EP.
@@ -99,7 +99,7 @@
   {
     id: 12
     story_campaign_id: "8"
-    name: Spark
+    name: Искра
     chapter: "8"
     type: 1
     tag: EP.
@@ -108,7 +108,7 @@
   {
     id: 13
     story_campaign_id: "-10,-11,-12,-13"
-    name: Deep Dive
+    name: Глубокое погружение
     chapter: "8.5"
     type: 2
     tag: EP.
@@ -117,7 +117,7 @@
   {
     id: 14
     story_campaign_id: "9"
-    name: Lost
+    name: Потерянная
     chapter: "9"
     type: 1
     tag: EP.
@@ -126,7 +126,7 @@
   {
     id: 15
     story_campaign_id: "10"
-    name: Purgatory
+    name: Чистилище
     chapter: "10"
     type: 1
     tag: EP.
