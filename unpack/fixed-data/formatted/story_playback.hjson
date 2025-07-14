@@ -90,7 +90,7 @@
   {
     id: 11
     story_campaign_id: "-7"
-    name: Теорема о закрытых глазах
+    name: Слепой метод
     chapter: "7.75"
     type: 2
     tag: EP.

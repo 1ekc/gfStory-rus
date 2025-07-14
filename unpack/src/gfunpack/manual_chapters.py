@@ -22,9 +22,9 @@ class Chapter:
 
 def _chapter_starting():
     return Chapter(
-        name='Prologue',
+        name='Пролог',
         # description='Автоигра при первом входе в игру',
-        description='',
+        description='Это была одна из обычный операций Команды AR',
         stories=[
             Story(name=f'Часть {i + 1}', description='',
                   files=[f'startavg/start{i}.txt'])

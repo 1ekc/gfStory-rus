@@ -44,7 +44,7 @@ function generateLeafOption(
 ): MenuOption & TreeSelectOption {
   const description = '';
   if (typeof pair === 'string') {
-    return { key: pair, label: `Part ${i + 1}`, description };
+    return { key: pair, label: `Часть ${i + 1}`, description };
   }
   return { key: pair[0], label: pair[1], description };
 }
