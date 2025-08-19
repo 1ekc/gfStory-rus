@@ -136,12 +136,6 @@ jobs:
           cd unpack
           source .venv/bin/activate
           python -m gfunpack downloader/output -o . --gf-data-rus gf-data-rus
-      - name: Verify source Russian files
-        run: |
-          cd unpack/gf-data-rus/asset/avgtxt
-          echo "Проверка русских исходников:"
-          grep -r -I -P "[А-Яа-я]" . || echo "Русский текст не найден в исходных файлах"
-          echo "Проверка завершена"
       - name: Log Disk Space
         run: df -h
       - name: Move Resources
