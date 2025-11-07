@@ -53,12 +53,32 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y --fix-missing ffmpeg pngquant imagemagick libfuse2
+          
           wget https://github.com/vgmstream/vgmstream-releases/releases/download/nightly/vgmstream-linux-cli.tar.gz
           tar -zxf vgmstream-linux-cli.tar.gz
-          mkdir bin
-          mv vgmstream-cli bin
-          wget https://imagemagick.org/archive/binaries/magick
-          mv magick bin
+          mkdir -p bin
+          mv vgmstream-cli bin/
+          
+          for url in \
+            "https://download.imagemagick.org/ImageMagick/download/binaries/magick" \
+            "https://imagemagick.org/archive/binaries/magick" \
+            "http://imagemagick.org/archive/binaries/magick"; do
+            if wget --timeout=30 --tries=2 "$url" -O bin/magick 2>/dev/null; then
+              break
+            fi
+          done
+          
+          if [ ! -f bin/magick ]; then
+            sudo apt-get install -y imagemagick
+            if which magick > /dev/null 2>&1; then
+              ln -s $(which magick) bin/magick
+            elif which convert > /dev/null 2>&1; then
+              ln -s $(which convert) bin/magick
+            else
+              exit 1
+            fi
+          fi
+          
           chmod a+x bin/*
           echo "${PWD}/bin" >> $GITHUB_PATH
       - name: Restore Cached Resources
