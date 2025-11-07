@@ -135,7 +135,7 @@
   {
     id: 16
     story_campaign_id: "-16,-17,-18"
-    name: Singularity
+    name: Сингулярность
     chapter: "10.5"
     type: 2
     tag: EP.
@@ -144,7 +144,7 @@
   {
     id: 17
     story_campaign_id: "-24,-25,-26,-28"
-    name: Continuum Turbulence
+    name: Непрерывная турбулентность
     chapter: "10.75"
     type: 2
     tag: EP.
@@ -153,7 +153,7 @@
   {
     id: 18
     story_campaign_id: "11"
-    name: The Hunt
+    name: Охота
     chapter: "11"
     type: 1
     tag: EP.
@@ -162,7 +162,7 @@
   {
     id: 19
     story_campaign_id: "-31"
-    name: Isomer
+    name: Изомер
     chapter: "11.5"
     type: 2
     tag: EP.
@@ -171,7 +171,7 @@
   {
     id: 20
     story_campaign_id: "-33"
-    name: Shattered Connexion
+    name: Разрушенная связь
     chapter: "11.75"
     type: 2
     tag: EP.
@@ -180,7 +180,7 @@
   {
     id: 21
     story_campaign_id: "12"
-    name: Gasp
+    name: Удушье
     chapter: "12"
     type: 1
     tag: EP.
@@ -189,7 +189,7 @@
   {
     id: 22
     story_campaign_id: "-36"
-    name: Polarized Light
+    name: Отраженный свет
     chapter: "12.5"
     type: 2
     tag: EP.
@@ -198,7 +198,7 @@
   {
     id: 23
     story_campaign_id: "13"
-    name: The Oblivione
+    name: Обливион
     chapter: "13"
     type: 1
     tag: EP.
@@ -207,7 +207,7 @@
   {
     id: 24
     story_campaign_id: "-41"
-    name: Dual Randomness
+    name: Двойная случайность
     chapter: "13.25"
     type: 2
     tag: EP.
@@ -216,7 +216,7 @@
   {
     id: 25
     story_campaign_id: "-44"
-    name: Mirror Stage
+    name: Зеркальная стадия
     chapter: "13.5"
     type: 2
     tag: EP.
@@ -225,7 +225,7 @@
   {
     id: 26
     story_campaign_id: "-48"
-    name: Poincaré Recurrence
+    name: Повторение Пуанкаре
     chapter: "13.75"
     type: 2
     tag: EP.
@@ -234,7 +234,7 @@
   {
     id: 27
     story_campaign_id: "-51"
-    name: Fixed Point
+    name: Фиксированная точка
     chapter: "13.8"
     type: 2
     tag: EP.
@@ -243,7 +243,7 @@
   {
     id: 28
     story_campaign_id: "-54"
-    name: Longitudinal Strain
+    name: Продольная деформация
     chapter: "13.9"
     type: 2
     tag: EP.
