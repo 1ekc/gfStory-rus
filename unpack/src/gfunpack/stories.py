@@ -329,7 +329,6 @@ extern.preloadResources({resource_urls})
             self._sprites[character][sprite] = ''
         sprite_string = '|'.join(f'{character}/{sprite}/{",".join(effects.keys())}'
                                  for character, sprite, effects in sprites)
-        print(f"DEBUG: {self.filename} -> sprite_string = {sprite_string}")
         self._remote_narrators = set(
             character for character, _, attrs in sprites
             if '通讯框' in attrs or character in self._remote_narrators

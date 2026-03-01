@@ -189,17 +189,16 @@ watch(() => props.framed, updateImageProperties);
 .sprite img[src=""] {
   opacity: 0;
 }
-.sprite.scan .sprite-frame img::after {
+.sprite.scan .sprite-frame::after {
   content: '';
   position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
+  left: v-bind(left);
+  top: v-bind(top);
+  width: v-bind(width);
+  height: v-bind(height);
+  clip-path: v-bind(clipPath);
   pointer-events: none;
-  z-index: 1;
-
-  /* Мягкий градиент с переходами прозрачности, цвет #00CCFF */
+  z-index: 1; /* выше изображения, но ниже рамки (если нужно) */
   background-image: repeating-linear-gradient(
     0deg,
     transparent,
@@ -209,17 +208,11 @@ watch(() => props.framed, updateImageProperties);
     transparent 9px,
     transparent 12px
   );
-
-  /* Анимация движения сверху вниз */
   animation: scan 3s linear infinite;
 }
 
 @keyframes scan {
-  0% {
-    background-position: 0 0;
-  }
-  100% {
-    background-position: 0 12px; /* смещение равно шагу градиента */
-  }
+  0% { background-position: 0 0; }
+  100% { background-position: 0 12px; }
 }
 </style>
