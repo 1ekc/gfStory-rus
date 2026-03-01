@@ -189,4 +189,37 @@ watch(() => props.framed, updateImageProperties);
 .sprite img[src=""] {
   opacity: 0;
 }
+.sprite.scan .sprite-frame img::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 1;
+
+  /* Мягкий градиент с переходами прозрачности, цвет #00CCFF */
+  background-image: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 3px,
+    rgba(0, 204, 255, 0.25) 5px,
+    rgba(0, 204, 255, 0.25) 7px,
+    transparent 9px,
+    transparent 12px
+  );
+
+  /* Анимация движения сверху вниз */
+  animation: scan 3s linear infinite;
+}
+
+@keyframes scan {
+  0% {
+    background-position: 0 0;
+  }
+  100% {
+    background-position: 0 12px; /* смещение равно шагу градиента */
+  }
+}
 </style>

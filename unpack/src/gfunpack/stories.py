@@ -76,6 +76,7 @@ _wrong_sprites = {
 
 _sprite_effects = {
     '隐身': 'stealth',
+    'scan': 'scan',
 }
 
 class StoryResources:
