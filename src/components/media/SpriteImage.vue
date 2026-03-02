@@ -100,6 +100,11 @@ watch(() => props.framed, updateImageProperties);
           clipPath: clipPath as string,
         }"
       />
+      <!-- Три полосы для эффекта ряби (scan) -->
+      <div v-if="sprite.effects?.includes('scan')" class="scan-bar scan-bar-1"></div>
+      <div v-if="sprite.effects?.includes('scan')" class="scan-bar scan-bar-2"></div>
+      <div v-if="sprite.effects?.includes('scan')" class="scan-bar scan-bar-3"></div>
+
       <div class="frame-foreground" v-if="framed"></div>
       <div class="frame-background" v-if="framed"></div>
     </div>
@@ -189,39 +194,62 @@ watch(() => props.framed, updateImageProperties);
 .sprite img[src=""] {
   opacity: 0;
 }
-.sprite.scan .sprite-frame::after {
-  content: '';
+
+/* Эффект ряби (scan) — три полосы с искажением */
+.sprite.scan .scan-bar {
   position: absolute;
   left: 0;
-  top: 0;
   width: 100%;
-  height: 100%;
-  clip-path: none;
-  pointer-events: none;
-  z-index: 1;
-  background-image: repeating-linear-gradient(
+  height: 60px;
+  background: repeating-linear-gradient(
     0deg,
-    transparent 0px,
-    transparent 8px,
+    transparent,
+    transparent 10px,
     rgba(0, 204, 255, 0.25) 10px,
-    rgba(0, 204, 255, 0.25) 18px,
+    rgba(0, 204, 255, 0.25) 20px,
     transparent 20px,
-    transparent 40px
+    transparent 30px
   );
-  animation: scan 3s linear infinite, distort 3s linear infinite;
+  pointer-events: none;
+  z-index: 2;
+  will-change: transform, top;
+  opacity: 0.9;
 }
 
-@keyframes scan {
-  0% { background-position: 0 0; }
-  100% { background-position: 0 40px; }
+@keyframes moveBar1 {
+  0% { top: -60px; transform: translateX(0); }
+  20% { transform: translateX(5px); }
+  40% { transform: translateX(-3px); }
+  60% { transform: translateX(4px); }
+  80% { transform: translateX(-2px); }
+  100% { top: 100%; transform: translateX(0); }
 }
 
-@keyframes distort {
-  0% { transform: translateX(0); }
-  20% { transform: translateX(1px); }
-  40% { transform: translateX(3px); }
-  60% { transform: translateX(2px); }
-  80% { transform: translateX(1px); }
-  100% { transform: translateX(0); }
+@keyframes moveBar2 {
+  0% { top: -80px; transform: translateX(0); }
+  25% { transform: translateX(-4px); }
+  50% { transform: translateX(6px); }
+  75% { transform: translateX(-3px); }
+  100% { top: 100%; transform: translateX(0); }
+}
+
+@keyframes moveBar3 {
+  0% { top: -40px; transform: translateX(0); }
+  30% { transform: translateX(3px); }
+  60% { transform: translateX(-5px); }
+  90% { transform: translateX(2px); }
+  100% { top: 100%; transform: translateX(0); }
+}
+
+.sprite.scan .scan-bar-1 {
+  animation: moveBar1 4s linear infinite;
+}
+
+.sprite.scan .scan-bar-2 {
+  animation: moveBar2 4.5s linear infinite;
+}
+
+.sprite.scan .scan-bar-3 {
+  animation: moveBar3 5s linear infinite;
 }
 </style>
