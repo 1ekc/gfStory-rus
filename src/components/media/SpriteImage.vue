@@ -192,27 +192,36 @@ watch(() => props.framed, updateImageProperties);
 .sprite.scan .sprite-frame::after {
   content: '';
   position: absolute;
-  left: v-bind(left);
-  top: v-bind(top);
-  width: v-bind(width);
-  height: v-bind(height);
-  clip-path: v-bind(clipPath);
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  clip-path: none;
   pointer-events: none;
-  z-index: 1; /* выше изображения, но ниже рамки (если нужно) */
+  z-index: 1;
   background-image: repeating-linear-gradient(
     0deg,
-    transparent,
-    transparent 3px,
-    rgba(0, 204, 255, 0.25) 5px,
-    rgba(0, 204, 255, 0.25) 7px,
-    transparent 9px,
-    transparent 12px
+    transparent 0px,
+    transparent 8px,
+    rgba(0, 204, 255, 0.25) 10px,
+    rgba(0, 204, 255, 0.25) 18px,
+    transparent 20px,
+    transparent 40px
   );
-  animation: scan 3s linear infinite;
+  animation: scan 3s linear infinite, distort 3s linear infinite;
 }
 
 @keyframes scan {
   0% { background-position: 0 0; }
-  100% { background-position: 0 12px; }
+  100% { background-position: 0 40px; }
+}
+
+@keyframes distort {
+  0% { transform: translateX(0); }
+  20% { transform: translateX(1px); }
+  40% { transform: translateX(3px); }
+  60% { transform: translateX(2px); }
+  80% { transform: translateX(1px); }
+  100% { transform: translateX(0); }
 }
 </style>
