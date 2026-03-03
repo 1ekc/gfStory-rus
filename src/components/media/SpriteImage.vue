@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import {
-  computed, onMounted, onUnmounted, ref, watch, nextTick,
+  computed, onMounted, onUnmounted, ref, watch,
 } from 'vue';
 
 import type { SpriteImage } from '../../story/interpreter';
@@ -83,57 +83,51 @@ watch(() => props.framed, updateImageProperties);
 const rippleEnabled = computed(() => props.sprite.effects?.includes('scan'));
 const filterId = `ripple-${Math.random().toString(36).substr(2, 9)}`;
 let animationFrame: number | null = null;
+const gradientRef = ref<SVGLinearGradientElement | null>(null);
 const offset = ref(0);
-const feImageRef = ref<SVGFEImageElement | null>(null);
-
-// Обновление карты смещения
-const updateDisplacementMap = () => {
-  if (!feImageRef.value) return;
-  // Генерируем градиент с движущимися полосами (три полосы на изображении)
-  const gradient = `linear-gradient(0deg,
-    transparent 0%,
-    transparent ${20 + offset.value}%,
-    rgba(128,128,128,0.5) ${25 + offset.value}%,
-    rgba(128,128,128,0.5) ${30 + offset.value}%,
-    transparent ${35 + offset.value}%,
-    transparent ${50 + offset.value}%,
-    rgba(128,128,128,0.5) ${55 + offset.value}%,
-    rgba(128,128,128,0.5) ${60 + offset.value}%,
-    transparent ${65 + offset.value}%,
-    transparent ${80 + offset.value}%,
-    rgba(128,128,128,0.5) ${85 + offset.value}%,
-    rgba(128,128,128,0.5) ${90 + offset.value}%,
-    transparent ${95 + offset.value}%,
-    transparent 100%)`;
-
-  // Создаём SVG с этим градиентом
-  const svg = `<svg xmlns='http://www.w3.org/2000/svg' width='100%' height='100%'>
-    <rect width='100%' height='100%' fill='url(#g)'/>
-    <defs>
-      <linearGradient id='g' x1='0%' y1='0%' x2='0%' y2='100%'>
-        ${gradient.replace(/#/g, '%23')}
-      </linearGradient>
-    </defs>
-  </svg>`;
-
-  const dataUri = `data:image/svg+xml,${encodeURIComponent(svg)}`;
-  feImageRef.value.setAttributeNS('http://www.w3.org/1999/xlink', 'href', dataUri);
-};
 
 const animateRipple = () => {
   if (!rippleEnabled.value) return;
-  offset.value = (offset.value + 2) % 100; // скорость движения
-  updateDisplacementMap();
+  offset.value = (offset.value + 2) % 100;
+
+  if (gradientRef.value) {
+    // Создаём три полосы, перемещающиеся вниз
+    const stops = [
+      { offset: `${(0 + offset.value) % 100}%`, color: 'transparent' },
+      { offset: `${(10 + offset.value) % 100}%`, color: 'transparent' },
+      { offset: `${(15 + offset.value) % 100}%`, color: '#808080' },
+      { offset: `${(25 + offset.value) % 100}%`, color: '#808080' },
+      { offset: `${(30 + offset.value) % 100}%`, color: 'transparent' },
+      { offset: `${(40 + offset.value) % 100}%`, color: 'transparent' },
+      { offset: `${(45 + offset.value) % 100}%`, color: '#808080' },
+      { offset: `${(55 + offset.value) % 100}%`, color: '#808080' },
+      { offset: `${(60 + offset.value) % 100}%`, color: 'transparent' },
+      { offset: `${(70 + offset.value) % 100}%`, color: 'transparent' },
+      { offset: `${(75 + offset.value) % 100}%`, color: '#808080' },
+      { offset: `${(85 + offset.value) % 100}%`, color: '#808080' },
+      { offset: `${(90 + offset.value) % 100}%`, color: 'transparent' },
+      { offset: '100%', color: 'transparent' }
+    ];
+
+    // Обновляем stops градиента
+    while (gradientRef.value.firstChild) {
+      gradientRef.value.removeChild(gradientRef.value.firstChild);
+    }
+
+    stops.forEach((stop, index) => {
+      const stopEl = document.createElementNS('http://www.w3.org/2000/svg', 'stop');
+      stopEl.setAttribute('offset', stop.offset);
+      stopEl.setAttribute('stop-color', stop.color);
+      gradientRef.value!.appendChild(stopEl);
+    });
+  }
+
   animationFrame = requestAnimationFrame(animateRipple);
 };
 
-// Запуск/остановка анимации при изменении эффекта
 watch(rippleEnabled, (enabled) => {
   if (enabled) {
-    // Ждём, пока отрисуется SVG с фильтром
-    nextTick(() => {
-      animateRipple();
-    });
+    animateRipple();
   } else if (animationFrame) {
     cancelAnimationFrame(animationFrame);
     animationFrame = null;
@@ -149,11 +143,18 @@ onUnmounted(() => {
   <div class="sprite" :class="sprite.effects ?? []"
     :style="{ left: `${center}px` }"
   >
-    <!-- SVG-фильтр для эффекта ряби (вставляется только если эффект включён) -->
+    <!-- SVG-фильтр для эффекта ряби -->
     <svg style="position: absolute; width: 0; height: 0;" v-if="rippleEnabled">
       <defs>
+        <!-- Градиент, который будет использоваться как карта смещения -->
+        <linearGradient ref="gradientRef" id="displacementGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+          <!-- Начальные значения, будут перезаписаны анимацией -->
+          <stop offset="0%" stop-color="transparent" />
+          <stop offset="100%" stop-color="transparent" />
+        </linearGradient>
+
         <filter :id="filterId" x="-20%" y="-20%" width="140%" height="140%">
-          <feImage ref="feImageRef" result="displacementMap" />
+          <feImage result="displacementMap" xlink:href="#displacementGradient" />
           <feDisplacementMap
             in="SourceGraphic"
             in2="displacementMap"
