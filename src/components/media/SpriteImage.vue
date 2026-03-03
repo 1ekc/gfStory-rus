@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import {
-  computed, onMounted, onUnmounted, ref, watch,
+  computed, onMounted, onUnmounted, ref, watch, nextTick,
 } from 'vue';
 
 import type { SpriteImage } from '../../story/interpreter';
@@ -79,55 +79,61 @@ onMounted(() => window.addEventListener('resize', updateImageProperties));
 onUnmounted(() => window.removeEventListener('resize', updateImageProperties));
 watch(() => props.framed, updateImageProperties);
 
-// --- SVG-фильтр для эффекта ряби (искажения) ---
+// --- Эффект ряби через canvas и feImage ---
 const rippleEnabled = computed(() => props.sprite.effects?.includes('scan'));
 const filterId = `ripple-${Math.random().toString(36).substr(2, 9)}`;
 let animationFrame: number | null = null;
-const gradientRef = ref<SVGLinearGradientElement | null>(null);
-const offset = ref(0);
+const canvasRef = ref<HTMLCanvasElement | null>(null);
+const feImageRef = ref<SVGFEImageElement | null>(null);
 
+// Рисование трёх полос на canvas
+const drawRipple = (ctx: CanvasRenderingContext2D, width: number, height: number, offset: number) => {
+  ctx.clearRect(0, 0, width, height);
+  ctx.fillStyle = 'black';
+  ctx.fillRect(0, 0, width, height);
+
+  const barHeight = 40;
+  const gap = (height - 3 * barHeight) / 2; // распределяем равномерно
+
+  ctx.fillStyle = 'gray';
+  // Первая полоса
+  let y = (gap + offset) % height;
+  ctx.fillRect(0, y, width, barHeight);
+  // Вторая полоса
+  y = (y + barHeight + gap) % height;
+  ctx.fillRect(0, y, width, barHeight);
+  // Третья полоса
+  y = (y + barHeight + gap) % height;
+  ctx.fillRect(0, y, width, barHeight);
+};
+
+let offset = 0;
 const animateRipple = () => {
-  if (!rippleEnabled.value) return;
-  offset.value = (offset.value + 2) % 100;
+  if (!rippleEnabled.value || !canvasRef.value || !feImageRef.value) return;
 
-  if (gradientRef.value) {
-    // Создаём три полосы, перемещающиеся вниз
-    const stops = [
-      { offset: `${(0 + offset.value) % 100}%`, color: 'transparent' },
-      { offset: `${(10 + offset.value) % 100}%`, color: 'transparent' },
-      { offset: `${(15 + offset.value) % 100}%`, color: '#808080' },
-      { offset: `${(25 + offset.value) % 100}%`, color: '#808080' },
-      { offset: `${(30 + offset.value) % 100}%`, color: 'transparent' },
-      { offset: `${(40 + offset.value) % 100}%`, color: 'transparent' },
-      { offset: `${(45 + offset.value) % 100}%`, color: '#808080' },
-      { offset: `${(55 + offset.value) % 100}%`, color: '#808080' },
-      { offset: `${(60 + offset.value) % 100}%`, color: 'transparent' },
-      { offset: `${(70 + offset.value) % 100}%`, color: 'transparent' },
-      { offset: `${(75 + offset.value) % 100}%`, color: '#808080' },
-      { offset: `${(85 + offset.value) % 100}%`, color: '#808080' },
-      { offset: `${(90 + offset.value) % 100}%`, color: 'transparent' },
-      { offset: '100%', color: 'transparent' }
-    ];
+  const canvas = canvasRef.value;
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return;
 
-    // Обновляем stops градиента
-    while (gradientRef.value.firstChild) {
-      gradientRef.value.removeChild(gradientRef.value.firstChild);
-    }
+  // Задаём размер canvas (можно изменить для другой плотности)
+  canvas.width = 100;
+  canvas.height = 300;
 
-    stops.forEach((stop, index) => {
-      const stopEl = document.createElementNS('http://www.w3.org/2000/svg', 'stop');
-      stopEl.setAttribute('offset', stop.offset);
-      stopEl.setAttribute('stop-color', stop.color);
-      gradientRef.value!.appendChild(stopEl);
-    });
-  }
+  drawRipple(ctx, canvas.width, canvas.height, offset);
+  offset = (offset + 2) % canvas.height; // скорость движения
+
+  const dataUrl = canvas.toDataURL();
+  feImageRef.value.setAttributeNS('http://www.w3.org/1999/xlink', 'xlink:href', dataUrl);
 
   animationFrame = requestAnimationFrame(animateRipple);
 };
 
 watch(rippleEnabled, (enabled) => {
   if (enabled) {
-    animateRipple();
+    nextTick(() => {
+      offset = 0;
+      animateRipple();
+    });
   } else if (animationFrame) {
     cancelAnimationFrame(animationFrame);
     animationFrame = null;
@@ -143,22 +149,18 @@ onUnmounted(() => {
   <div class="sprite" :class="sprite.effects ?? []"
     :style="{ left: `${center}px` }"
   >
+    <!-- Скрытый canvas для генерации карты смещения -->
+    <canvas ref="canvasRef" style="display: none;"></canvas>
+
     <!-- SVG-фильтр для эффекта ряби -->
     <svg style="position: absolute; width: 0; height: 0;" v-if="rippleEnabled">
       <defs>
-        <!-- Градиент, который будет использоваться как карта смещения -->
-        <linearGradient ref="gradientRef" id="displacementGradient" x1="0%" y1="0%" x2="0%" y2="100%">
-          <!-- Начальные значения, будут перезаписаны анимацией -->
-          <stop offset="0%" stop-color="transparent" />
-          <stop offset="100%" stop-color="transparent" />
-        </linearGradient>
-
         <filter :id="filterId" x="-20%" y="-20%" width="140%" height="140%">
-          <feImage result="displacementMap" xlink:href="#displacementGradient" />
+          <feImage ref="feImageRef" result="displacementMap" />
           <feDisplacementMap
             in="SourceGraphic"
             in2="displacementMap"
-            scale="30"
+            :scale="50"
             xChannelSelector="R"
             yChannelSelector="G"
           />
