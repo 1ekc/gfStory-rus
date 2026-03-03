@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import {
-  computed, onMounted, onUnmounted, ref, watch,
+  computed, onMounted, onUnmounted, ref, watch, nextTick,
 } from 'vue';
 
 import type { SpriteImage } from '../../story/interpreter';
@@ -81,33 +81,59 @@ watch(() => props.framed, updateImageProperties);
 
 // --- SVG-фильтр для эффекта ряби (искажения) ---
 const rippleEnabled = computed(() => props.sprite.effects?.includes('scan'));
-const filterId = `ripple-${Math.random().toString(36).substr(2, 9)}`; // уникальный ID
+const filterId = `ripple-${Math.random().toString(36).substr(2, 9)}`;
 let animationFrame: number | null = null;
 const offset = ref(0);
+const feImageRef = ref<SVGFEImageElement | null>(null);
+
+// Обновление карты смещения
+const updateDisplacementMap = () => {
+  if (!feImageRef.value) return;
+  // Генерируем градиент с движущимися полосами (три полосы на изображении)
+  const gradient = `linear-gradient(0deg,
+    transparent 0%,
+    transparent ${20 + offset.value}%,
+    rgba(128,128,128,0.5) ${25 + offset.value}%,
+    rgba(128,128,128,0.5) ${30 + offset.value}%,
+    transparent ${35 + offset.value}%,
+    transparent ${50 + offset.value}%,
+    rgba(128,128,128,0.5) ${55 + offset.value}%,
+    rgba(128,128,128,0.5) ${60 + offset.value}%,
+    transparent ${65 + offset.value}%,
+    transparent ${80 + offset.value}%,
+    rgba(128,128,128,0.5) ${85 + offset.value}%,
+    rgba(128,128,128,0.5) ${90 + offset.value}%,
+    transparent ${95 + offset.value}%,
+    transparent 100%)`;
+
+  // Создаём SVG с этим градиентом
+  const svg = `<svg xmlns='http://www.w3.org/2000/svg' width='100%' height='100%'>
+    <rect width='100%' height='100%' fill='url(#g)'/>
+    <defs>
+      <linearGradient id='g' x1='0%' y1='0%' x2='0%' y2='100%'>
+        ${gradient.replace(/#/g, '%23')}
+      </linearGradient>
+    </defs>
+  </svg>`;
+
+  const dataUri = `data:image/svg+xml,${encodeURIComponent(svg)}`;
+  feImageRef.value.setAttributeNS('http://www.w3.org/1999/xlink', 'href', dataUri);
+};
 
 const animateRipple = () => {
   if (!rippleEnabled.value) return;
-  offset.value = (offset.value + 2) % 100; // скорость движения полос
-  const feImage = document.querySelector(`#${filterId} feImage`);
-  if (feImage) {
-    // Генерируем градиент с движущимися полосами (карта смещения)
-    const gradient = `linear-gradient(0deg,
-      transparent 0%,
-      transparent ${30 + offset.value}%,
-      rgba(128,128,128,0.5) ${35 + offset.value}%,
-      rgba(128,128,128,0.5) ${40 + offset.value}%,
-      transparent ${45 + offset.value}%,
-      transparent 100%)`;
-    // Преобразуем в data-URI
-    const svg = `<svg xmlns='http://www.w3.org/2000/svg' width='100%' height='100%'><rect width='100%' height='100%' fill='url(#g)'/><defs><linearGradient id='g' x1='0%' y1='0%' x2='0%' y2='100%'>${gradient.replace(/#/g, '%23')}</linearGradient></defs></svg>`;
-    feImage.setAttribute('xlink:href', `data:image/svg+xml,${encodeURIComponent(svg)}`);
-  }
+  offset.value = (offset.value + 2) % 100; // скорость движения
+  updateDisplacementMap();
   animationFrame = requestAnimationFrame(animateRipple);
 };
 
+// Запуск/остановка анимации при изменении эффекта
 watch(rippleEnabled, (enabled) => {
   if (enabled) {
-    animateRipple();
+    // Ждём, пока отрисуется SVG с фильтром
+    nextTick(() => {
+      animateRipple();
+    });
   } else if (animationFrame) {
     cancelAnimationFrame(animationFrame);
     animationFrame = null;
@@ -127,7 +153,7 @@ onUnmounted(() => {
     <svg style="position: absolute; width: 0; height: 0;" v-if="rippleEnabled">
       <defs>
         <filter :id="filterId" x="-20%" y="-20%" width="140%" height="140%">
-          <feImage id="displacement-map" result="displacementMap" />
+          <feImage ref="feImageRef" result="displacementMap" />
           <feDisplacementMap
             in="SourceGraphic"
             in2="displacementMap"
