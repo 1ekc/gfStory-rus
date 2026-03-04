@@ -66,16 +66,14 @@ function updateCurrentIndex(file: string) {
 // Переход к следующей сцене в списке
 function nextStory() {
   if (currentStoryIndex.value < storyList.value.length - 1) {
-    const nextIndex = currentStoryIndex.value + 1;
-    value.value = storyList.value[nextIndex].value;
+    value.value = storyList.value[currentStoryIndex.value + 1].value;
   }
 }
 
 // Переход к предыдущей сцене в списке
 function prevStory() {
   if (currentStoryIndex.value > 0) {
-    const prevIndex = currentStoryIndex.value - 1;
-    value.value = storyList.value[prevIndex].value;
+    value.value = storyList.value[currentStoryIndex.value - 1].value;
   }
 }
 
@@ -89,7 +87,7 @@ function saveProgress(storyId: string) {
 }
 
 watch(() => value.value, (file) => {
-  updateCurrentIndex(file); // обновляем индекс
+  updateCurrentIndex(file);
   menu.value?.showOption(file);
   const url = new URL(window.location.toString());
   if (url.searchParams.get('story') !== file) {
@@ -109,12 +107,20 @@ function updateFromLocation() {
   }
 }
 
+// Загрузка списка сцен
 async function loadStoryList() {
   try {
-    const response = await fetch('/stories.json');
+    const response = await fetch('/stories/stories.json');
     const data = await response.json();
-    // Преобразуем данные в плоский список, если это дерево
-    storyList.value = flattenStoryData(data);
+
+    // Преобразуем объект в массив
+    storyList.value = Object.keys(data).map(key => ({
+      value: key,
+      label: key // пока используем имя файла как название
+    }));
+
+    // Сортируем по алфавиту
+    storyList.value.sort((a, b) => a.value.localeCompare(b.value));
 
     // Восстановление прогресса
     const savedProgress = localStorage.getItem('storyProgress');
@@ -125,33 +131,7 @@ async function loadStoryList() {
     }
   } catch (e) {
     console.error('Error loading story list:', e);
-  }
-}async function loadStoryList() {
-  try {
-    // Загружаем JSON с сервера (путь тот же, что вы нашли)
-    const response = await fetch('/stories/stories.json');
-    const data = await response.json();
-
-    // Преобразуем объект в нужный для storyList формат
-    // data приходит как {"файл.txt": "файл.txt", ...}
-    storyList.value = Object.keys(data).map(key => ({
-      value: key,           // имя файла, например "0-1-1.txt"
-      label: key            // пока используем имя файла как название
-    }));
-
-    // Сортируем по алфавиту, чтобы был порядок
-    storyList.value.sort((a, b) => a.value.localeCompare(b.value));
-
-    // Восстанавливаем прогресс
-    const savedProgress = localStorage.getItem('storyProgress');
-    if (savedProgress && storyList.value.some(s => s.value === savedProgress)) {
-      value.value = savedProgress;
-    } else if (storyList.value.length > 0) {
-      value.value = storyList.value[0].value;
-    }
-  } catch (e) {
-    console.error('Error loading story list:', e);
-    // Если что-то пошло не так, показываем хотя бы несколько тестовых сцен
+    // Запасной вариант
     storyList.value = [
       { value: "0-1-1.txt", label: "0-1-1.txt" },
       { value: "0-1-2.txt", label: "0-1-2.txt" },
@@ -159,45 +139,6 @@ async function loadStoryList() {
     ];
     value.value = storyList.value[0].value;
   }
-}
-
-// Рекурсивно преобразует дерево глав в плоский список сцен
-function flattenStoryData(data: any): {value: string, label: string}[] {
-  const result: {value: string, label: string}[] = [];
-
-  function traverse(items: any[]) {
-    if (!Array.isArray(items)) return;
-
-    for (const item of items) {
-      // Если есть поле files — это сцена
-      if (item.files && Array.isArray(item.files)) {
-        for (const file of item.files) {
-          if (typeof file === 'string') {
-            result.push({
-              value: file,
-              label: item.name || file
-            });
-          } else if (Array.isArray(file) && file.length >= 2) {
-            result.push({
-              value: file[0],
-              label: file[1] || item.name
-            });
-          }
-        }
-      }
-      // Если есть children — рекурсивно обходим
-      if (item.children && Array.isArray(item.children)) {
-        traverse(item.children);
-      }
-      // Для корневых разделов (main, event, etc.) — обходим их содержимое
-      if (typeof item === 'object' && !item.files && !item.children) {
-        traverse(Object.values(item));
-      }
-    }
-  }
-
-  traverse([data]);
-  return result;
 }
 
 const width = ref(window.innerWidth);
@@ -266,5 +207,80 @@ const hasNextStory = computed(() =>
 </template>
 
 <style>
-/* ... существующие стили ... */
+#app,
+.story-background {
+  height: 100vh;
+}
+
+.story-heading {
+  font-weight: bold;
+  margin-right: 1em;
+}
+
+.n-drawer a {
+  color: #63e2b7;
+}
+
+.plain-text {
+  max-width: 90vw;
+}
+
+.plain-text .directive.audio::before {
+  content: "BGM：";
+}
+.plain-text .directive.background::before {
+  content: "Background: ";
+}
+.plain-text .directive.se::before {
+  content: "SFX: ";
+}
+.plain-text .directive.audio::before,
+.plain-text .directive.background::before,
+.plain-text .directive.se::before {
+  font-style: italic;
+}
+
+.plain-text .directive.classes,
+.plain-text .directive.color,
+.plain-text .directive.remote,
+.plain-text .directive.sprites,
+.plain-text pre code.language-lua {
+  display: none;
+}
+.plain-text > p {
+  margin-left: 2em;
+}
+.plain-text .directive.narrator:not(:empty) {
+  font-size: 1.1em;
+  font-weight: bold;
+  margin-left: -2em;
+  border-left: 2px solid orange;
+  padding-left: 0.5em;
+}
+
+.plain-text > ul::before {
+  content: "Settings：";
+  font-weight: bold;
+  font-style: italic;
+  margin-left: -2em;
+}
+
+.plain-text p > code {
+  font-size: 0.8em;
+}
+.plain-text p > code:last-child::before {
+  content: "Jump to branch：";
+  font-weight: bold;
+  font-style: italic;
+}
+.plain-text p > code:first-child:not(:last-child)::before {
+  content: "Branches：";
+  font-weight: bold;
+  font-style: italic;
+  margin-left: -2em;
+}
+.plain-text p > code:first-child::after {
+  display: block;
+  content: "";
+}
 </style>
