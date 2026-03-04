@@ -126,6 +126,39 @@ async function loadStoryList() {
   } catch (e) {
     console.error('Error loading story list:', e);
   }
+}async function loadStoryList() {
+  try {
+    // Загружаем JSON с сервера (путь тот же, что вы нашли)
+    const response = await fetch('/stories/stories.json');
+    const data = await response.json();
+
+    // Преобразуем объект в нужный для storyList формат
+    // data приходит как {"файл.txt": "файл.txt", ...}
+    storyList.value = Object.keys(data).map(key => ({
+      value: key,           // имя файла, например "0-1-1.txt"
+      label: key            // пока используем имя файла как название
+    }));
+
+    // Сортируем по алфавиту, чтобы был порядок
+    storyList.value.sort((a, b) => a.value.localeCompare(b.value));
+
+    // Восстанавливаем прогресс
+    const savedProgress = localStorage.getItem('storyProgress');
+    if (savedProgress && storyList.value.some(s => s.value === savedProgress)) {
+      value.value = savedProgress;
+    } else if (storyList.value.length > 0) {
+      value.value = storyList.value[0].value;
+    }
+  } catch (e) {
+    console.error('Error loading story list:', e);
+    // Если что-то пошло не так, показываем хотя бы несколько тестовых сцен
+    storyList.value = [
+      { value: "0-1-1.txt", label: "0-1-1.txt" },
+      { value: "0-1-2.txt", label: "0-1-2.txt" },
+      { value: "0-2-1.txt", label: "0-2-1.txt" },
+    ];
+    value.value = storyList.value[0].value;
+  }
 }
 
 // Рекурсивно преобразует дерево глав в плоский список сцен
