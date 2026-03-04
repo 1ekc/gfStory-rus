@@ -96,7 +96,7 @@ const stopAnimation = () => {
     cancelAnimationFrame(animationFrame);
     animationFrame = null;
   }
-  originalData = null; // сброс для возможного перезапуска
+  originalData = null;
 };
 
 const startAnimation = () => {
@@ -118,7 +118,7 @@ const startAnimation = () => {
   const imageData = ctx.getImageData(0, 0, w, h);
   originalData = imageData.data;
 
-  // Параметры анимации (как в последнем рабочем тесте)
+  // Параметры анимации
   const barHeight = 5;
   const maxShift = 10;
   const speed = 2.5;
@@ -190,25 +190,22 @@ const startAnimation = () => {
 // Наблюдаем за включением эффекта
 watch(rippleEnabled, (enabled) => {
   if (enabled) {
-    // Поднимаем z-index рамки
+    // Поднимаем z-index рамки (frame-foreground выше canvas, frame-background под ним)
     if (frameForegroundRef.value) frameForegroundRef.value.style.zIndex = '10';
-    if (frameBackgroundRef.value) frameBackgroundRef.value.style.zIndex = '9';
+    if (frameBackgroundRef.value) frameBackgroundRef.value.style.zIndex = '1';
 
     // Скрываем оригинальное изображение
     if (imgRef.value) imgRef.value.style.opacity = '0';
 
-    // Даём время на обновление DOM, затем запускаем анимацию
     nextTick(() => {
       startAnimation();
     });
   } else {
-    // Возвращаем оригинал
     if (imgRef.value) imgRef.value.style.opacity = '1';
     stopAnimation();
   }
-}, { immediate: true }); // immediate, чтобы обработать случай, когда эффект уже включён при монтировании
+}, { immediate: true });
 
-// При уничтожении компонента останавливаем анимацию
 onUnmounted(() => {
   stopAnimation();
   window.removeEventListener('resize', updateImageProperties);
@@ -239,7 +236,7 @@ onUnmounted(() => {
         }"
       />
 
-      <!-- Canvas для эффекта (виден только при наличии scan) -->
+      <!-- Canvas для эффекта -->
       <canvas v-if="rippleEnabled" ref="canvasRef" class="distortion-canvas"
         :style="{
           left: `${left}px`,
