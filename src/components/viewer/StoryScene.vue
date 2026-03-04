@@ -36,21 +36,30 @@ const props = defineProps<{
   loading?: boolean,
 
   history?: [string, string][];
-}>();
-const textBox = ref<HTMLDivElement>();
-const textAnimating = ref(false);
 
-// eslint-disable-next-line no-spaced-func
+  // Новые пропсы для навигации
+  hasPrevStory?: boolean,
+  hasNextStory?: boolean,
+}>();
+
 const emit = defineEmits<{
   (event: 'click'): void,
   (event: 'choose', option: number): void,
   (event: 'animation-finished'): void,
+  // Новые события
+  (event: 'prev-story'): void,
+  (event: 'next-story'): void,
 }>();
+
+const textBox = ref<HTMLDivElement>();
+const textAnimating = ref(false);
+
 watch(() => textAnimating.value, (animating) => {
   if (!animating) {
     emit('animation-finished');
   }
 });
+
 let clickX = 0;
 let clickY = 0;
 function setDownPosition(event: MouseEvent) {
@@ -95,6 +104,7 @@ onMounted(() => {
     }
   });
 });
+
 watch(() => props.history, (history) => {
   if (history) {
     nextTick(() => {
@@ -110,6 +120,19 @@ watch(() => props.history, (history) => {
   <div class="story-background" :class="classes">
     <div class="button-slot" v-show="!history">
       <slot></slot>
+      <!-- Кнопки навигации по сценам -->
+      <button v-if="hasPrevStory" @click.stop="$emit('prev-story')">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+          <path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z" fill="currentColor"/>
+        </svg>
+        <span>назад</span>
+      </button>
+      <button v-if="hasNextStory" @click.stop="$emit('next-story')">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+          <path d="M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8z" fill="currentColor"/>
+        </svg>
+        <span>далее</span>
+      </button>
     </div>
     <div class="background-image">
       <img v-show="backgroundUrl.endsWith('/') ? '' : backgroundUrl"
@@ -186,7 +209,7 @@ watch(() => props.history, (history) => {
   background-color: #0000;
   border: 1px solid #fff8;
   border-radius: 3px;
-  width: 45px;
+  width: 60px;
   height: 45px;
   position: relative;
   filter: drop-shadow(1px 1px 1px #fff8);

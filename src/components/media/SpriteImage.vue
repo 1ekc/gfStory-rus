@@ -82,65 +82,57 @@ watch(() => props.framed, updateImageProperties);
 // --- Эффект ряби (scan) через canvas ---
 const rippleEnabled = computed(() => props.sprite.effects?.includes('scan'));
 
-// Ссылки на DOM-элементы
 const imgRef = ref<HTMLImageElement | null>(null);
 const canvasRef = ref<HTMLCanvasElement | null>(null);
 const frameForegroundRef = ref<HTMLDivElement | null>(null);
 const frameBackgroundRef = ref<HTMLDivElement | null>(null);
 
-// Состояние анимации
 let animationFrame: number | null = null;
 let originalData: Uint8ClampedArray | null = null;
-let imageWidth = 0, imageHeight = 0;
+let imageLoaded = false;
 
-// Остановка анимации
 const stopAnimation = () => {
   if (animationFrame) {
     cancelAnimationFrame(animationFrame);
     animationFrame = null;
   }
+  originalData = null; // сброс для возможного перезапуска
 };
 
-// Запуск анимации
 const startAnimation = () => {
-  if (!rippleEnabled.value || !canvasRef.value || !props.sprite.image) return;
+  if (!rippleEnabled.value || !canvasRef.value || !imgRef.value || !props.sprite.image) return;
 
   const canvas = canvasRef.value;
   const ctx = canvas.getContext('2d', { alpha: true, willReadFrequently: true });
   if (!ctx) return;
 
-  // Получаем размеры canvas (должны совпадать с img)
-  const w = canvas.width;
-  const h = canvas.height;
+  // Устанавливаем правильные физические размеры canvas
+  const imgElement = imgRef.value;
+  const w = imgElement.clientWidth;
+  const h = imgElement.clientHeight;
+  canvas.width = w;
+  canvas.height = h;
 
-  // Если исходные данные ещё не сохранены, рисуем изображение и сохраняем пиксели
-  if (!originalData) {
-    ctx.drawImage(props.sprite.image, 0, 0, w, h);
-    const imageData = ctx.getImageData(0, 0, w, h);
-    originalData = imageData.data;
-    imageWidth = w;
-    imageHeight = h;
-  }
+  // Рисуем изображение и сохраняем исходные пиксели
+  ctx.drawImage(props.sprite.image, 0, 0, w, h);
+  const imageData = ctx.getImageData(0, 0, w, h);
+  originalData = imageData.data;
 
-  // Параметры анимации
+  // Параметры анимации (как в последнем рабочем тесте)
   const barHeight = 5;
   const maxShift = 10;
   const speed = 2.5;
-  const phases = [0, -h/3, -2*h/3]; // последовательное появление
+  const phases = [0, -h/3, -2*h/3];
 
   let offset = 0;
 
   const animate = () => {
-    if (!ctx || !canvas) return;
-
     offset = (offset + speed) % h;
 
-    // Создаём новый ImageData на основе сохранённых исходных пикселей
     const newImageData = ctx.createImageData(w, h);
     const newData = newImageData.data;
-    newData.set(originalData!); // копируем исходные пиксели
+    newData.set(originalData!);
 
-    // Искажение для трёх полос
     for (let i = 0; i < 3; i++) {
       let centerY = (phases[i] + offset + h) % h;
       let y0 = centerY - barHeight / 2;
@@ -195,7 +187,7 @@ const startAnimation = () => {
   animate();
 };
 
-// Следим за включением эффекта
+// Наблюдаем за включением эффекта
 watch(rippleEnabled, (enabled) => {
   if (enabled) {
     // Поднимаем z-index рамки
@@ -205,23 +197,18 @@ watch(rippleEnabled, (enabled) => {
     // Скрываем оригинальное изображение
     if (imgRef.value) imgRef.value.style.opacity = '0';
 
-    // Убедимся, что canvas создан и имеет правильные размеры
+    // Даём время на обновление DOM, затем запускаем анимацию
     nextTick(() => {
-      if (canvasRef.value) {
-        // Размеры canvas должны совпадать с размерами изображения
-        canvasRef.value.width = width.value;
-        canvasRef.value.height = height.value;
-        startAnimation();
-      }
+      startAnimation();
     });
   } else {
     // Возвращаем оригинал
     if (imgRef.value) imgRef.value.style.opacity = '1';
     stopAnimation();
-    originalData = null; // сброс для возможного перезапуска
   }
-});
+}, { immediate: true }); // immediate, чтобы обработать случай, когда эффект уже включён при монтировании
 
+// При уничтожении компонента останавливаем анимацию
 onUnmounted(() => {
   stopAnimation();
   window.removeEventListener('resize', updateImageProperties);
@@ -240,7 +227,7 @@ onUnmounted(() => {
         height: `${boxHeight}px`,
       }"
     >
-      <!-- Оригинальное изображение (скрывается при эффекте) -->
+      <!-- Оригинальное изображение -->
       <img ref="imgRef"
         :src="sprite.image.classList.contains('failed') ? '' : sprite.image.src"
         :style="{
@@ -252,7 +239,7 @@ onUnmounted(() => {
         }"
       />
 
-      <!-- Canvas для эффекта ряби (отображается только при наличии scan) -->
+      <!-- Canvas для эффекта (виден только при наличии scan) -->
       <canvas v-if="rippleEnabled" ref="canvasRef" class="distortion-canvas"
         :style="{
           left: `${left}px`,

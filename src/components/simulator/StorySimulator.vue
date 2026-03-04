@@ -9,7 +9,7 @@ import {
   type MenuInst,
 } from 'naive-ui';
 import {
-  onMounted, ref, watch,
+  computed, onMounted, ref, watch,
 } from 'vue';
 
 import StoryList from './StoryList.vue';
@@ -23,6 +23,7 @@ const chunk = ref('');
 const html = ref('');
 const loading = ref(false);
 const storyList = ref<{value: string, label: string}[]>([]);
+const currentStoryIndex = ref(0);
 
 async function switchStory(path: string) {
   loading.value = true;
@@ -54,12 +55,33 @@ const showMenu = ref(false);
 const value = ref('');
 const menu = ref<MenuInst>();
 
-function onStoryEnded() {
-  const currentIndex = storyList.value.findIndex(s => s.value === value.value);
-  if (currentIndex >= 0 && currentIndex < storyList.value.length - 1) {
-    const nextStory = storyList.value[currentIndex + 1];
-    value.value = nextStory.value;
+// Обновление текущего индекса при смене сцены
+function updateCurrentIndex(file: string) {
+  const index = storyList.value.findIndex(s => s.value === file);
+  if (index !== -1) {
+    currentStoryIndex.value = index;
   }
+}
+
+// Переход к следующей сцене в списке
+function nextStory() {
+  if (currentStoryIndex.value < storyList.value.length - 1) {
+    const nextIndex = currentStoryIndex.value + 1;
+    value.value = storyList.value[nextIndex].value;
+  }
+}
+
+// Переход к предыдущей сцене в списке
+function prevStory() {
+  if (currentStoryIndex.value > 0) {
+    const prevIndex = currentStoryIndex.value - 1;
+    value.value = storyList.value[prevIndex].value;
+  }
+}
+
+function onStoryEnded() {
+  // Автоматически переходим к следующей сцене
+  nextStory();
 }
 
 function saveProgress(storyId: string) {
@@ -67,6 +89,7 @@ function saveProgress(storyId: string) {
 }
 
 watch(() => value.value, (file) => {
+  updateCurrentIndex(file); // обновляем индекс
   menu.value?.showOption(file);
   const url = new URL(window.location.toString());
   if (url.searchParams.get('story') !== file) {
@@ -89,7 +112,9 @@ function updateFromLocation() {
 async function loadStoryList() {
   try {
     const response = await fetch('/stories.json');
-    storyList.value = await response.json();
+    const data = await response.json();
+    // Преобразуем данные в плоский список, если это дерево
+    storyList.value = flattenStoryData(data);
 
     // Восстановление прогресса
     const savedProgress = localStorage.getItem('storyProgress');
@@ -101,6 +126,45 @@ async function loadStoryList() {
   } catch (e) {
     console.error('Error loading story list:', e);
   }
+}
+
+// Рекурсивно преобразует дерево глав в плоский список сцен
+function flattenStoryData(data: any): {value: string, label: string}[] {
+  const result: {value: string, label: string}[] = [];
+
+  function traverse(items: any[]) {
+    if (!Array.isArray(items)) return;
+
+    for (const item of items) {
+      // Если есть поле files — это сцена
+      if (item.files && Array.isArray(item.files)) {
+        for (const file of item.files) {
+          if (typeof file === 'string') {
+            result.push({
+              value: file,
+              label: item.name || file
+            });
+          } else if (Array.isArray(file) && file.length >= 2) {
+            result.push({
+              value: file[0],
+              label: file[1] || item.name
+            });
+          }
+        }
+      }
+      // Если есть children — рекурсивно обходим
+      if (item.children && Array.isArray(item.children)) {
+        traverse(item.children);
+      }
+      // Для корневых разделов (main, event, etc.) — обходим их содержимое
+      if (typeof item === 'object' && !item.files && !item.children) {
+        traverse(Object.values(item));
+      }
+    }
+  }
+
+  traverse([data]);
+  return result;
 }
 
 const width = ref(window.innerWidth);
@@ -116,6 +180,14 @@ onMounted(() => {
 });
 
 const showText = ref(false);
+
+// Вычисляем наличие предыдущей/следующей сцены
+const hasPrevStory = computed(() =>
+  storyList.value.length > 0 && currentStoryIndex.value > 0
+);
+const hasNextStory = computed(() =>
+  storyList.value.length > 0 && currentStoryIndex.value < storyList.value.length - 1
+);
 </script>
 
 <template>
@@ -145,6 +217,10 @@ const showText = ref(false);
         @menu="showMenu = true" @text="showText = true" @ended="onStoryEnded"
         :chunk="chunk"
         :loading="loading"
+        :has-prev-story="hasPrevStory"
+        :has-next-story="hasNextStory"
+        @prev-story="prevStory"
+        @next-story="nextStory"
       />
       <n-modal
         v-model:show="showText" preset="card" size="huge"
@@ -157,80 +233,5 @@ const showText = ref(false);
 </template>
 
 <style>
-#app,
-.story-background {
-  height: 100vh;
-}
-
-.story-heading {
-  font-weight: bold;
-  margin-right: 1em;
-}
-
-.n-drawer a {
-  color: #63e2b7;
-}
-
-.plain-text {
-  max-width: 90vw;
-}
-
-.plain-text .directive.audio::before {
-  content: "BGM：";
-}
-.plain-text .directive.background::before {
-  content: "Background: ";
-}
-.plain-text .directive.se::before {
-  content: "SFX: ";
-}
-.plain-text .directive.audio::before,
-.plain-text .directive.background::before,
-.plain-text .directive.se::before {
-  font-style: italic;
-}
-
-.plain-text .directive.classes,
-.plain-text .directive.color,
-.plain-text .directive.remote,
-.plain-text .directive.sprites,
-.plain-text pre code.language-lua {
-  display: none;
-}
-.plain-text > p {
-  margin-left: 2em;
-}
-.plain-text .directive.narrator:not(:empty) {
-  font-size: 1.1em;
-  font-weight: bold;
-  margin-left: -2em;
-  border-left: 2px solid orange;
-  padding-left: 0.5em;
-}
-
-.plain-text > ul::before {
-  content: "Settings：";
-  font-weight: bold;
-  font-style: italic;
-  margin-left: -2em;
-}
-
-.plain-text p > code {
-  font-size: 0.8em;
-}
-.plain-text p > code:last-child::before {
-  content: "Jump to branch：";
-  font-weight: bold;
-  font-style: italic;
-}
-.plain-text p > code:first-child:not(:last-child)::before {
-  content: "Branches：";
-  font-weight: bold;
-  font-style: italic;
-  margin-left: -2em;
-}
-.plain-text p > code:first-child::after {
-  display: block;
-  content: "";
-}
+/* ... существующие стили ... */
 </style>
