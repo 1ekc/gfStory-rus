@@ -79,69 +79,152 @@ onMounted(() => window.addEventListener('resize', updateImageProperties));
 onUnmounted(() => window.removeEventListener('resize', updateImageProperties));
 watch(() => props.framed, updateImageProperties);
 
-// --- Эффект ряби через canvas и feImage ---
+// --- Эффект ряби (scan) через canvas ---
 const rippleEnabled = computed(() => props.sprite.effects?.includes('scan'));
-const filterId = `ripple-${Math.random().toString(36).substr(2, 9)}`;
-let animationFrame: number | null = null;
+
+// Ссылки на DOM-элементы
+const imgRef = ref<HTMLImageElement | null>(null);
 const canvasRef = ref<HTMLCanvasElement | null>(null);
-const feImageRef = ref<SVGFEImageElement | null>(null);
+const frameForegroundRef = ref<HTMLDivElement | null>(null);
+const frameBackgroundRef = ref<HTMLDivElement | null>(null);
 
-// Рисование трёх полос на canvas
-const drawRipple = (ctx: CanvasRenderingContext2D, width: number, height: number, offset: number) => {
-  ctx.clearRect(0, 0, width, height);
-  ctx.fillStyle = 'black';
-  ctx.fillRect(0, 0, width, height);
+// Состояние анимации
+let animationFrame: number | null = null;
+let originalData: Uint8ClampedArray | null = null;
+let imageWidth = 0, imageHeight = 0;
 
-  const barHeight = 40;
-  const gap = (height - 3 * barHeight) / 2; // распределяем равномерно
-
-  ctx.fillStyle = 'gray';
-  // Первая полоса
-  let y = (gap + offset) % height;
-  ctx.fillRect(0, y, width, barHeight);
-  // Вторая полоса
-  y = (y + barHeight + gap) % height;
-  ctx.fillRect(0, y, width, barHeight);
-  // Третья полоса
-  y = (y + barHeight + gap) % height;
-  ctx.fillRect(0, y, width, barHeight);
-};
-
-let offset = 0;
-const animateRipple = () => {
-  if (!rippleEnabled.value || !canvasRef.value || !feImageRef.value) return;
-
-  const canvas = canvasRef.value;
-  const ctx = canvas.getContext('2d');
-  if (!ctx) return;
-
-  // Задаём размер canvas (можно изменить для другой плотности)
-  canvas.width = 100;
-  canvas.height = 300;
-
-  drawRipple(ctx, canvas.width, canvas.height, offset);
-  offset = (offset + 2) % canvas.height; // скорость движения
-
-  const dataUrl = canvas.toDataURL();
-  feImageRef.value.setAttributeNS('http://www.w3.org/1999/xlink', 'xlink:href', dataUrl);
-
-  animationFrame = requestAnimationFrame(animateRipple);
-};
-
-watch(rippleEnabled, (enabled) => {
-  if (enabled) {
-    nextTick(() => {
-      offset = 0;
-      animateRipple();
-    });
-  } else if (animationFrame) {
+// Остановка анимации
+const stopAnimation = () => {
+  if (animationFrame) {
     cancelAnimationFrame(animationFrame);
     animationFrame = null;
+  }
+};
+
+// Запуск анимации
+const startAnimation = () => {
+  if (!rippleEnabled.value || !canvasRef.value || !props.sprite.image) return;
+
+  const canvas = canvasRef.value;
+  const ctx = canvas.getContext('2d', { alpha: true, willReadFrequently: true });
+  if (!ctx) return;
+
+  // Получаем размеры canvas (должны совпадать с img)
+  const w = canvas.width;
+  const h = canvas.height;
+
+  // Если исходные данные ещё не сохранены, рисуем изображение и сохраняем пиксели
+  if (!originalData) {
+    ctx.drawImage(props.sprite.image, 0, 0, w, h);
+    const imageData = ctx.getImageData(0, 0, w, h);
+    originalData = imageData.data;
+    imageWidth = w;
+    imageHeight = h;
+  }
+
+  // Параметры анимации
+  const barHeight = 5;
+  const maxShift = 10;
+  const speed = 2.5;
+  const phases = [0, -h/3, -2*h/3]; // последовательное появление
+
+  let offset = 0;
+
+  const animate = () => {
+    if (!ctx || !canvas) return;
+
+    offset = (offset + speed) % h;
+
+    // Создаём новый ImageData на основе сохранённых исходных пикселей
+    const newImageData = ctx.createImageData(w, h);
+    const newData = newImageData.data;
+    newData.set(originalData!); // копируем исходные пиксели
+
+    // Искажение для трёх полос
+    for (let i = 0; i < 3; i++) {
+      let centerY = (phases[i] + offset + h) % h;
+      let y0 = centerY - barHeight / 2;
+
+      for (let j = -1; j <= 1; j++) {
+        let yStart = y0 + j * h;
+        let yEnd = yStart + barHeight;
+        let yMin = Math.max(0, Math.floor(yStart));
+        let yMax = Math.min(h, Math.ceil(yEnd));
+
+        for (let y = yMin; y < yMax; y++) {
+          let dist = Math.abs(y - centerY);
+          let intensity = 1 - dist / (barHeight / 2);
+          if (intensity < 0) intensity = 0;
+          let shift = Math.round(intensity * maxShift);
+
+          for (let x = 0; x < w; x++) {
+            let srcX = x - shift;
+            if (srcX < 0) srcX = 0;
+            if (srcX >= w) srcX = w - 1;
+            let srcIdx = (y * w + srcX) * 4;
+            let dstIdx = (y * w + x) * 4;
+            newData[dstIdx] = originalData![srcIdx];
+            newData[dstIdx + 1] = originalData![srcIdx + 1];
+            newData[dstIdx + 2] = originalData![srcIdx + 2];
+            newData[dstIdx + 3] = originalData![srcIdx + 3];
+          }
+        }
+      }
+    }
+
+    ctx.putImageData(newImageData, 0, 0);
+
+    // Рисуем визуальные полосы поверх
+    ctx.fillStyle = '#0ff3';
+    ctx.shadowColor = '#0ff3';
+    ctx.shadowBlur = 8;
+    for (let i = 0; i < 3; i++) {
+      let centerY = (phases[i] + offset + h) % h;
+      let y0 = centerY - barHeight / 2;
+      for (let j = -1; j <= 1; j++) {
+        let y = y0 + j * h;
+        if (y > -barHeight && y < h) {
+          ctx.fillRect(0, y, w, barHeight);
+        }
+      }
+    }
+
+    animationFrame = requestAnimationFrame(animate);
+  };
+
+  animate();
+};
+
+// Следим за включением эффекта
+watch(rippleEnabled, (enabled) => {
+  if (enabled) {
+    // Поднимаем z-index рамки
+    if (frameForegroundRef.value) frameForegroundRef.value.style.zIndex = '10';
+    if (frameBackgroundRef.value) frameBackgroundRef.value.style.zIndex = '9';
+
+    // Скрываем оригинальное изображение
+    if (imgRef.value) imgRef.value.style.opacity = '0';
+
+    // Убедимся, что canvas создан и имеет правильные размеры
+    nextTick(() => {
+      if (canvasRef.value) {
+        // Размеры canvas должны совпадать с размерами изображения
+        canvasRef.value.width = width.value;
+        canvasRef.value.height = height.value;
+        startAnimation();
+      }
+    });
+  } else {
+    // Возвращаем оригинал
+    if (imgRef.value) imgRef.value.style.opacity = '1';
+    stopAnimation();
+    originalData = null; // сброс для возможного перезапуска
   }
 });
 
 onUnmounted(() => {
-  if (animationFrame) cancelAnimationFrame(animationFrame);
+  stopAnimation();
+  window.removeEventListener('resize', updateImageProperties);
 });
 </script>
 
@@ -149,25 +232,6 @@ onUnmounted(() => {
   <div class="sprite" :class="sprite.effects ?? []"
     :style="{ left: `${center}px` }"
   >
-    <!-- Скрытый canvas для генерации карты смещения -->
-    <canvas ref="canvasRef" style="display: none;"></canvas>
-
-    <!-- SVG-фильтр для эффекта ряби -->
-    <svg style="position: absolute; width: 0; height: 0;" v-if="rippleEnabled">
-      <defs>
-        <filter :id="filterId" x="-20%" y="-20%" width="140%" height="140%">
-          <feImage ref="feImageRef" result="displacementMap" />
-          <feDisplacementMap
-            in="SourceGraphic"
-            in2="displacementMap"
-            :scale="50"
-            xChannelSelector="R"
-            yChannelSelector="G"
-          />
-        </filter>
-      </defs>
-    </svg>
-
     <div class="sprite-frame"
       :style="{
         left: `${boxLeft}px`,
@@ -176,7 +240,8 @@ onUnmounted(() => {
         height: `${boxHeight}px`,
       }"
     >
-      <img
+      <!-- Оригинальное изображение (скрывается при эффекте) -->
+      <img ref="imgRef"
         :src="sprite.image.classList.contains('failed') ? '' : sprite.image.src"
         :style="{
           left: `${left}px`,
@@ -184,11 +249,25 @@ onUnmounted(() => {
           width: `${width}px`,
           height: `${height}px`,
           clipPath: clipPath as string,
-          filter: rippleEnabled ? `url(#${filterId})` : 'none',
         }"
       />
-      <div class="frame-foreground" v-if="framed"></div>
-      <div class="frame-background" v-if="framed"></div>
+
+      <!-- Canvas для эффекта ряби (отображается только при наличии scan) -->
+      <canvas v-if="rippleEnabled" ref="canvasRef" class="distortion-canvas"
+        :style="{
+          left: `${left}px`,
+          top: `${top}px`,
+          width: `${width}px`,
+          height: `${height}px`,
+          clipPath: clipPath as string,
+          position: 'absolute',
+          pointerEvents: 'none',
+          zIndex: '5',
+        }"
+      ></canvas>
+
+      <div ref="frameForeground" class="frame-foreground" v-if="framed"></div>
+      <div ref="frameBackground" class="frame-background" v-if="framed"></div>
     </div>
   </div>
 </template>
@@ -274,5 +353,10 @@ onUnmounted(() => {
 
 .sprite img[src=""] {
   opacity: 0;
+}
+
+/* Стили для canvas эффекта */
+.distortion-canvas {
+  will-change: transform;
 }
 </style>
