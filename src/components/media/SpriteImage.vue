@@ -189,13 +189,13 @@ const startAnimation = () => {
 // Наблюдаем за включением эффекта
 watch(rippleEnabled, (enabled) => {
   if (enabled) {
-    // Поднимаем z-index рамки (frame-foreground выше canvas, frame-background под ним)
+    // === ГЛАВНОЕ ИСПРАВЛЕНИЕ: принудительно устанавливаем z-index ===
     if (frameForegroundRef.value) {
-      frameForegroundRef.value.style.zIndex = '10';
-      frameForegroundRef.value.style.position = 'relative'; // гарантия
+      frameForegroundRef.value.style.setProperty('z-index', '10', 'important');
+      frameForegroundRef.value.style.position = 'relative';
     }
     if (frameBackgroundRef.value) {
-      frameBackgroundRef.value.style.zIndex = '1';
+      frameBackgroundRef.value.style.setProperty('z-index', '1', 'important');
       frameBackgroundRef.value.style.position = 'relative';
     }
 
