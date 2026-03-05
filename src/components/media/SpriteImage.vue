@@ -196,9 +196,25 @@ watch(rippleEnabled, (enabled) => {
       styleEl = document.createElement('style');
       styleEl.id = styleId;
       styleEl.textContent = `
-        .frame-foreground { z-index: 10 !important; position: relative !important; }
-        .frame-background { z-index: 1 !important; position: relative !important; }
-        .distortion-canvas { z-index: 5 !important; }
+        .frame-foreground {
+          z-index: 10 !important;
+          position: absolute !important;
+          top: 0 !important;
+          left: 0 !important;
+          width: 100% !important;
+          height: 100% !important;
+        }
+        .frame-background {
+          z-index: 1 !important;
+          position: absolute !important;
+          top: 0 !important;
+          left: 0 !important;
+          width: 100% !important;
+          height: 100% !important;
+        }
+        .distortion-canvas {
+          z-index: 5 !important;
+        }
       `;
       document.head.appendChild(styleEl);
     }
