@@ -189,14 +189,18 @@ const startAnimation = () => {
 // Наблюдаем за включением эффекта
 watch(rippleEnabled, (enabled) => {
   if (enabled) {
-    // === ГЛАВНОЕ ИСПРАВЛЕНИЕ: принудительно устанавливаем z-index ===
-    if (frameForegroundRef.value) {
-      frameForegroundRef.value.style.setProperty('z-index', '10', 'important');
-      frameForegroundRef.value.style.position = 'relative';
-    }
-    if (frameBackgroundRef.value) {
-      frameBackgroundRef.value.style.setProperty('z-index', '1', 'important');
-      frameBackgroundRef.value.style.position = 'relative';
+    // === ГАРАНТИРОВАННОЕ ПРИМЕНЕНИЕ Z-INDEX ЧЕРЕЗ ГЛОБАЛЬНЫЕ СТИЛИ ===
+    const styleId = 'scan-effect-zindex';
+    let styleEl = document.getElementById(styleId);
+    if (!styleEl) {
+      styleEl = document.createElement('style');
+      styleEl.id = styleId;
+      styleEl.textContent = `
+        .frame-foreground { z-index: 10 !important; position: relative !important; }
+        .frame-background { z-index: 1 !important; position: relative !important; }
+        .distortion-canvas { z-index: 5 !important; }
+      `;
+      document.head.appendChild(styleEl);
     }
 
     // Скрываем оригинальное изображение
@@ -206,6 +210,10 @@ watch(rippleEnabled, (enabled) => {
       startAnimation();
     });
   } else {
+    // Удаляем добавленные стили
+    const styleEl = document.getElementById('scan-effect-zindex');
+    if (styleEl) styleEl.remove();
+
     if (imgRef.value) imgRef.value.style.opacity = '1';
     stopAnimation();
   }
