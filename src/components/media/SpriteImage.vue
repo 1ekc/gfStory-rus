@@ -189,7 +189,7 @@ const startAnimation = () => {
 // Наблюдаем за включением эффекта
 watch(rippleEnabled, (enabled) => {
   if (enabled) {
-    // === ГАРАНТИРОВАННОЕ ПРИМЕНЕНИЕ Z-INDEX ЧЕРЕЗ ГЛОБАЛЬНЫЕ СТИЛИ ===
+    // === ТОЛЬКО Z-INDEX, БЕЗ ИЗМЕНЕНИЯ ПОЗИЦИИ ===
     const styleId = 'scan-effect-zindex';
     let styleEl = document.getElementById(styleId);
     if (!styleEl) {
@@ -198,19 +198,9 @@ watch(rippleEnabled, (enabled) => {
       styleEl.textContent = `
         .frame-foreground {
           z-index: 10 !important;
-          position: absolute !important;
-          top: 0 !important;
-          left: 0 !important;
-          width: 100% !important;
-          height: 100% !important;
         }
         .frame-background {
           z-index: 1 !important;
-          position: absolute !important;
-          top: 0 !important;
-          left: 0 !important;
-          width: 100% !important;
-          height: 100% !important;
         }
         .distortion-canvas {
           z-index: 5 !important;
