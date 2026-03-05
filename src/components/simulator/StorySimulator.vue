@@ -107,20 +107,17 @@ function updateFromLocation() {
   }
 }
 
-// Загрузка списка сцен
+// Загрузка списка сцен из chapter-order.json
 async function loadStoryList() {
   try {
-    const response = await fetch('/stories/stories.json');
-    const data = await response.json();
+    const response = await fetch('/chapter-order.json');
+    const orderList = await response.json();
 
-    // Преобразуем объект в массив
-    storyList.value = Object.keys(data).map(key => ({
-      value: key,
-      label: key // пока используем имя файла как название
+    // Преобразуем массив в нужный формат
+    storyList.value = orderList.map((fileName: string) => ({
+      value: fileName,
+      label: fileName
     }));
-
-    // Сортируем по алфавиту
-    storyList.value.sort((a, b) => a.value.localeCompare(b.value));
 
     // Восстановление прогресса
     const savedProgress = localStorage.getItem('storyProgress');
@@ -130,14 +127,32 @@ async function loadStoryList() {
       value.value = storyList.value[0].value;
     }
   } catch (e) {
-    console.error('Error loading story list:', e);
-    // Запасной вариант
-    storyList.value = [
-      { value: "0-1-1.txt", label: "0-1-1.txt" },
-      { value: "0-1-2.txt", label: "0-1-2.txt" },
-      { value: "0-2-1.txt", label: "0-2-1.txt" },
-    ];
-    value.value = storyList.value[0].value;
+    console.error('Error loading chapter order:', e);
+    // Запасной вариант - загружаем из stories.json
+    try {
+      const response = await fetch('/stories/stories.json');
+      const data = await response.json();
+      storyList.value = Object.keys(data).map(key => ({
+        value: key,
+        label: key
+      })).sort((a, b) => a.value.localeCompare(b.value));
+
+      const savedProgress = localStorage.getItem('storyProgress');
+      if (savedProgress && storyList.value.some(s => s.value === savedProgress)) {
+        value.value = savedProgress;
+      } else if (storyList.value.length > 0) {
+        value.value = storyList.value[0].value;
+      }
+    } catch (e2) {
+      console.error('Error loading story list:', e2);
+      // Последний запасной вариант
+      storyList.value = [
+        { value: "0-1-1.txt", label: "0-1-1.txt" },
+        { value: "0-1-2.txt", label: "0-1-2.txt" },
+        { value: "0-2-1.txt", label: "0-2-1.txt" },
+      ];
+      value.value = storyList.value[0].value;
+    }
   }
 }
 
