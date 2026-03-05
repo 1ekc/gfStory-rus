@@ -89,7 +89,6 @@ const frameBackgroundRef = ref<HTMLDivElement | null>(null);
 
 let animationFrame: number | null = null;
 let originalData: Uint8ClampedArray | null = null;
-let imageLoaded = false;
 
 const stopAnimation = () => {
   if (animationFrame) {
@@ -191,8 +190,14 @@ const startAnimation = () => {
 watch(rippleEnabled, (enabled) => {
   if (enabled) {
     // Поднимаем z-index рамки (frame-foreground выше canvas, frame-background под ним)
-    if (frameForegroundRef.value) frameForegroundRef.value.style.zIndex = '10';
-    if (frameBackgroundRef.value) frameBackgroundRef.value.style.zIndex = '1';
+    if (frameForegroundRef.value) {
+      frameForegroundRef.value.style.zIndex = '10';
+      frameForegroundRef.value.style.position = 'relative'; // гарантия
+    }
+    if (frameBackgroundRef.value) {
+      frameBackgroundRef.value.style.zIndex = '1';
+      frameBackgroundRef.value.style.position = 'relative';
+    }
 
     // Скрываем оригинальное изображение
     if (imgRef.value) imgRef.value.style.opacity = '0';
