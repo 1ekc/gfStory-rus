@@ -244,7 +244,7 @@ onUnmounted(() => {
     @prev-story="$emit('prev-story')"
     @next-story="$emit('next-story')"
   >
-    <!-- Кнопки, которые попадают в слот (верхняя панель) -->
+    <!-- Только эти кнопки попадают в слот (верхняя панель) -->
     <button v-if="menuButton" @click="emit('menu')">
       <menu-filled></menu-filled><span>Меню</span>
     </button>
@@ -262,20 +262,9 @@ onUnmounted(() => {
       <input v-if="auto" type="range" min="1" max="10" v-model="autoSpeed" />
     </div>
 
-    <!-- Кнопки навигации (будут в верхней панели на десктопе,
-         но в StoryScene они продублированы внизу для мобильных) -->
-    <button v-if="hasPrevStory" @click="$emit('prev-story')">
-      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
-        <path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z" fill="currentColor" />
-      </svg>
-      <span>назад</span>
-    </button>
-    <button v-if="hasNextStory" @click="$emit('next-story')">
-      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
-        <path d="M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8z" fill="currentColor" />
-      </svg>
-      <span>далее</span>
-    </button>
+    <!-- ВАЖНО: Кнопки навигации ЗДЕСЬ БОЛЬШЕ НЕ ДУБЛИРУЕМ! -->
+    <!-- Они теперь только в StoryScene.vue -->
+
   </story-scene>
 </template>
 

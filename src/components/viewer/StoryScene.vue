@@ -121,14 +121,14 @@ watch(() => props.history, (history) => {
     <!-- Верхняя панель кнопок (для десктопа) -->
     <div class="button-slot desktop-only" v-show="!history">
       <slot></slot>
-      <!-- Кнопки навигации для десктопа -->
-      <button v-if="hasPrevStory" @click.stop="$emit('prev-story')">
+      <!-- Кнопки навигации ТОЛЬКО ДЛЯ ДЕСКТОПА -->
+      <button v-if="hasPrevStory" @click.stop="$emit('prev-story')" class="nav-btn">
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
           <path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z" fill="currentColor"/>
         </svg>
         <span>назад</span>
       </button>
-      <button v-if="hasNextStory" @click.stop="$emit('next-story')">
+      <button v-if="hasNextStory" @click.stop="$emit('next-story')" class="nav-btn">
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
           <path d="M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8z" fill="currentColor"/>
         </svg>
@@ -361,6 +361,7 @@ watch(() => props.history, (history) => {
   max-width: 42em;
   left: 0;
   right: 0;
+  z-index: 10;
 
   border: 1.5px solid #ccca;
   box-shadow: inset 0 0 1px black;
@@ -377,6 +378,12 @@ watch(() => props.history, (history) => {
   right: 0;
   bottom: 0;
   padding: 0 7px 0 0;
+}
+
+@media (max-height: 20rem) {
+  .dialog {
+    font-size: 0.8em;
+  }
 }
 
 .dialog .text {
@@ -492,9 +499,10 @@ watch(() => props.history, (history) => {
   .dialog {
     max-width: 95%;
     min-height: 4em;
-    margin-bottom: 1em;
+    margin-bottom: 80px;
     font-size: 0.85em;
     clip-path: polygon(0 0, 0 100%, 100% 100%, 100% 12px, 200px 12px, 185px 0);
+    z-index: 10;
   }
 
   .dialog .text {
@@ -522,9 +530,11 @@ watch(() => props.history, (history) => {
     width: calc(100% - 180px);
   }
 
-  /* Место для мобильных кнопок */
+  /* Обеспечиваем видимость контента */
   .story {
-    padding-bottom: 80px;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: 90px;
   }
 
   /* Мобильная навигация */
@@ -584,6 +594,7 @@ watch(() => props.history, (history) => {
     width: 2.5em;
     height: 2.5em;
     margin: 0.5em;
+    z-index: 1001;
   }
 }
 
@@ -592,6 +603,7 @@ watch(() => props.history, (history) => {
   .dialog {
     font-size: 0.75em;
     min-height: 3.5em;
+    margin-bottom: 70px;
     clip-path: polygon(0 0, 0 100%, 100% 100%, 100% 10px, 160px 10px, 145px 0);
   }
 
@@ -612,7 +624,7 @@ watch(() => props.history, (history) => {
   }
 
   .story {
-    padding-bottom: 70px;
+    padding-bottom: 80px;
   }
 }
 
@@ -621,7 +633,7 @@ watch(() => props.history, (history) => {
   .dialog {
     max-width: 70%;
     font-size: 0.8em;
-    margin-bottom: 0.5em;
+    margin-bottom: 70px;
     clip-path: polygon(0 0, 0 100%, 100% 100%, 100% 12px, 200px 12px, 185px 0);
   }
 
@@ -630,7 +642,7 @@ watch(() => props.history, (history) => {
   }
 
   .story {
-    padding-bottom: 60px;
+    padding-bottom: 70px;
   }
 
   .mobile-nav {
