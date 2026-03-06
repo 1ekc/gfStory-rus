@@ -37,7 +37,7 @@ const props = defineProps<{
 
   history?: [string, string][];
 
-  // Новые пропсы для навигации
+  // Пропсы для навигации
   hasPrevStory?: boolean,
   hasNextStory?: boolean,
 }>();
@@ -46,7 +46,7 @@ const emit = defineEmits<{
   (event: 'click'): void,
   (event: 'choose', option: number): void,
   (event: 'animation-finished'): void,
-  // Новые события
+  // События навигации
   (event: 'prev-story'): void,
   (event: 'next-story'): void,
 }>();
@@ -118,9 +118,10 @@ watch(() => props.history, (history) => {
 
 <template>
   <div class="story-background" :class="classes">
-    <div class="button-slot" v-show="!history">
+    <!-- Верхняя панель кнопок (для десктопа) -->
+    <div class="button-slot desktop-only" v-show="!history">
       <slot></slot>
-      <!-- Кнопки навигации по сценам -->
+      <!-- Кнопки навигации для десктопа -->
       <button v-if="hasPrevStory" @click.stop="$emit('prev-story')">
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
           <path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z" fill="currentColor"/>
@@ -134,6 +135,35 @@ watch(() => props.history, (history) => {
         <span>далее</span>
       </button>
     </div>
+
+    <!-- Мобильная навигация (кнопки внизу) -->
+    <div class="mobile-nav" v-if="!history && (hasPrevStory || hasNextStory)">
+      <button
+        v-if="hasPrevStory"
+        @click.stop="$emit('prev-story')"
+        @touchstart.stop="$emit('prev-story')"
+        class="mobile-nav-btn prev"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+          <path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z" fill="currentColor"/>
+        </svg>
+        <span>назад</span>
+      </button>
+
+      <button
+        v-if="hasNextStory"
+        @click.stop="$emit('next-story')"
+        @touchstart.stop="$emit('next-story')"
+        class="mobile-nav-btn next"
+      >
+        <span>далее</span>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+          <path d="M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8z" fill="currentColor"/>
+        </svg>
+      </button>
+    </div>
+
+    <!-- Основной контент -->
     <div class="background-image">
       <img v-show="backgroundUrl.endsWith('/') ? '' : backgroundUrl"
         :src="backgroundUrl"
@@ -195,6 +225,7 @@ watch(() => props.history, (history) => {
 <style>
 @import url('https://fonts.font.im/css2?family=Noto+Sans+SC&display=swap');
 
+/* ========== ОСНОВНЫЕ СТИЛИ ========== */
 .story-background .button-slot {
   position: absolute;
   display: flex;
@@ -204,6 +235,7 @@ watch(() => props.history, (history) => {
   z-index: 3;
   margin: 0.5em 1.2em 0.5em 1.2em;
 }
+
 .story-background .button-slot button {
   color: white;
   background-color: #0000;
@@ -214,20 +246,25 @@ watch(() => props.history, (history) => {
   position: relative;
   filter: drop-shadow(1px 1px 1px #fff8);
 }
+
 .story-background .button-slot button.toggled {
   color: orange;
   border: 1px solid orange;
   box-shadow: 0 0 5px orange;
 }
+
 .story-background .button-slot button:not(:first-child) {
   margin-left: 1em;
 }
+
 .story-background .button-slot button:hover {
   box-shadow: 0 0 3px white;
 }
+
 .story-background .button-slot button:active {
   box-shadow: 0 0 3px white inset;
 }
+
 .story-background .button-slot button > svg {
   position: absolute;
   left: 0;
@@ -235,6 +272,7 @@ watch(() => props.history, (history) => {
   width: 30px;
   height: 30px;
 }
+
 .story-background .button-slot button > span {
   position: absolute;
   right: 0;
@@ -242,13 +280,15 @@ watch(() => props.history, (history) => {
   padding-right: 3px;
 }
 
-.story-background .background-image, .story-background > .background-image > img {
+.story-background .background-image,
+.story-background > .background-image > img {
   position: absolute;
   z-index: 0;
   width: 100%;
   height: 100%;
   object-fit: cover;
 }
+
 .story-background > .background-image > img[src=""] {
   opacity: 0;
 }
@@ -277,6 +317,7 @@ watch(() => props.history, (history) => {
   z-index: 3;
   filter: drop-shadow(1px 1px 2px #000);
 }
+
 .story .options button {
   position: relative;
   display: block;
@@ -289,6 +330,7 @@ watch(() => props.history, (history) => {
   color: white;
   border: 1px solid #fdb300c0;
 }
+
 .story .options button::before {
   position: absolute;
   content: "";
@@ -299,9 +341,11 @@ watch(() => props.history, (history) => {
   top: 5px;
   background-color: #fdb300c0;
 }
+
 .story .options button:hover {
   background-color: #000a;
 }
+
 .story .options button:active {
   background-color: #000f;
 }
@@ -324,22 +368,15 @@ watch(() => props.history, (history) => {
   background-size: 4px 4px;
   clip-path: polygon(0 0, 0 100%, 100% 100%, 100% 18px, 258px 18px, 240px 0);
 
-  /* TODO: Decide what fonts to use.
-   * On Firefox, using online fonts with AnimatedText seems to cause flickering text.
-   */
   font-family: 'Noto Sans SC', sans-serif;
   color: white;
 }
+
 .dialog .corner {
   position: absolute;
   right: 0;
   bottom: 0;
   padding: 0 7px 0 0;
-}
-@media (max-height: 20rem) {
-  .dialog {
-    font-size: 0.8em;
-  }
 }
 
 .dialog .text {
@@ -350,9 +387,11 @@ watch(() => props.history, (history) => {
   height: 5em;
   transition: height 0.2s;
 }
+
 .dialog .text p {
   margin: 0;
 }
+
 .dialog .text table.history-lines > tr > td:first-child {
   padding-right: 1em;
   vertical-align: top;
@@ -369,15 +408,18 @@ watch(() => props.history, (history) => {
 .narrator-box {
   height: 24px;
 }
+
 .narrator-box .narrator {
   display: inline-block;
   height: 24px;
   vertical-align: top;
 }
+
 .narrator-box .narrator span {
   font-size: 1.2em;
   margin-left: 1em;
 }
+
 .narrator-box .narrator-corner {
   display: inline-block;
   position: absolute;
@@ -395,6 +437,7 @@ watch(() => props.history, (history) => {
   50% { transform: rotate(180deg); }
   to { transform: rotate(360deg); }
 }
+
 .story-background .loading-spinner {
   position: absolute;
   right: 0;
@@ -404,17 +447,18 @@ watch(() => props.history, (history) => {
   z-index: 10;
   margin: 1em
 }
+
 .story-background .loading-spinner svg {
   width: 100%;
   height: 100%;
   animation: loading-spin 4s linear infinite;
 }
 
-/* All kinds of effects. */
-
+/* Эффекты */
 .night.story-background .background-image {
   background-color: #00f8;
 }
+
 .night.story-background .background-image > img {
   mix-blend-mode: multiply;
 }
@@ -422,19 +466,188 @@ watch(() => props.history, (history) => {
 .story-background .background-image {
   transition: 0.5s opacity;
 }
+
 .blank.story-background .background-image {
   opacity: 0;
 }
 
 @keyframes fade-in {
-  from {
-    opacity: 0;
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.fade-in.story-background .background-image,
+.fade-in.story-background .sprites {
+  animation: fade-in 1s linear 0s 1;
+}
+
+/* ========== МОБИЛЬНАЯ АДАПТАЦИЯ ========== */
+@media (max-width: 768px) {
+  /* Скрываем десктопные кнопки */
+  .desktop-only {
+    display: none !important;
   }
-  to {
-    opacity: 1;
+
+  /* Адаптация диалогового окна */
+  .dialog {
+    max-width: 95%;
+    min-height: 4em;
+    margin-bottom: 1em;
+    font-size: 0.85em;
+    clip-path: polygon(0 0, 0 100%, 100% 100%, 100% 12px, 200px 12px, 185px 0);
+  }
+
+  .dialog .text {
+    height: 4em !important;
+    font-size: 0.95em;
+    margin: 0.3em 0.8em 0.8em 0.8em;
+  }
+
+  .narrator-box {
+    height: 20px;
+  }
+
+  .narrator-box .narrator {
+    height: 20px;
+    font-size: 0.9em;
+  }
+
+  .narrator-box .narrator span {
+    font-size: 1em;
+    margin-left: 0.5em;
+  }
+
+  .narrator-box .narrator-corner {
+    height: 20px;
+    width: calc(100% - 180px);
+  }
+
+  /* Место для мобильных кнопок */
+  .story {
+    padding-bottom: 80px;
+  }
+
+  /* Мобильная навигация */
+  .mobile-nav {
+    position: fixed;
+    bottom: 15px;
+    left: 0;
+    right: 0;
+    display: flex;
+    justify-content: space-between;
+    padding: 0 15px;
+    z-index: 1000;
+    pointer-events: none;
+  }
+
+  .mobile-nav-btn {
+    pointer-events: auto;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 20px;
+    background: rgba(30, 30, 30, 0.9);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 215, 0, 0.5);
+    border-radius: 30px;
+    color: white;
+    font-size: 16px;
+    font-weight: 500;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    transition: all 0.2s;
+    min-width: 110px;
+    justify-content: center;
+  }
+
+  .mobile-nav-btn:active {
+    transform: scale(0.95);
+    background: rgba(50, 50, 50, 0.9);
+    border-color: gold;
+  }
+
+  .mobile-nav-btn.prev {
+    margin-right: auto;
+  }
+
+  .mobile-nav-btn.next {
+    margin-left: auto;
+  }
+
+  .mobile-nav-btn svg {
+    width: 22px;
+    height: 22px;
+    fill: gold;
+  }
+
+  /* Уменьшаем загрузочный спиннер */
+  .story-background .loading-spinner {
+    width: 2.5em;
+    height: 2.5em;
+    margin: 0.5em;
   }
 }
-.fade-in.story-background .background-image, .fade-in.story-background .sprites {
-  animation: fade-in 1s linear 0s 1;
+
+/* Для очень маленьких экранов */
+@media (max-width: 480px) {
+  .dialog {
+    font-size: 0.75em;
+    min-height: 3.5em;
+    clip-path: polygon(0 0, 0 100%, 100% 100%, 100% 10px, 160px 10px, 145px 0);
+  }
+
+  .dialog .text {
+    height: 3.5em !important;
+    margin: 0.2em 0.5em 0.5em 0.5em;
+  }
+
+  .mobile-nav-btn {
+    padding: 10px 16px;
+    min-width: 95px;
+    font-size: 14px;
+  }
+
+  .mobile-nav-btn svg {
+    width: 18px;
+    height: 18px;
+  }
+
+  .story {
+    padding-bottom: 70px;
+  }
+}
+
+/* Альбомная ориентация на мобильных */
+@media (max-width: 768px) and (orientation: landscape) {
+  .dialog {
+    max-width: 70%;
+    font-size: 0.8em;
+    margin-bottom: 0.5em;
+    clip-path: polygon(0 0, 0 100%, 100% 100%, 100% 12px, 200px 12px, 185px 0);
+  }
+
+  .dialog .text {
+    height: 3.5em !important;
+  }
+
+  .story {
+    padding-bottom: 60px;
+  }
+
+  .mobile-nav {
+    bottom: 10px;
+  }
+
+  .mobile-nav-btn {
+    padding: 8px 14px;
+    min-width: 90px;
+    font-size: 13px;
+  }
+}
+
+/* Десктоп: скрываем мобильную навигацию */
+@media (min-width: 769px) {
+  .mobile-nav {
+    display: none;
+  }
 }
 </style>

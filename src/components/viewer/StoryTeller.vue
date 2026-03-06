@@ -15,7 +15,6 @@ const props = defineProps<{
   loading?: boolean,
   menuButton?: boolean,
   textButton?: boolean,
-  // Новые пропсы для навигации по списку сцен
   hasPrevStory?: boolean,
   hasNextStory?: boolean,
 }>();
@@ -24,7 +23,6 @@ const emit = defineEmits<{
   (event: 'menu'): void,
   (event: 'text'): void,
   (event: 'ended'): void,
-  // Новые события
   (event: 'prev-story'): void,
   (event: 'next-story'): void,
 }>();
@@ -225,11 +223,28 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <story-scene :background-url="background" :background-style="style" :classes="classes" :narrator-html="narratorHtml"
-    :sprites="sprites" :remote="remote" :text-html="text" :pop-char-animation-interval="auto ? 42 / autoSpeed : 42"
-    :options="options" @click="() => { auto = false; nextLine(); }" @choose="(v) => nextLine(v)"
-    @animation-finished="scheduleAuto" :loading="loading || preloading" :history="showingHistory"
-    :text-height="showingHistory ? 'calc(100vh - 6em - 24px)' : undefined">
+  <story-scene
+    :background-url="background"
+    :background-style="style"
+    :classes="classes"
+    :narrator-html="narratorHtml"
+    :sprites="sprites"
+    :remote="remote"
+    :text-html="text"
+    :pop-char-animation-interval="auto ? 42 / autoSpeed : 42"
+    :options="options"
+    @click="() => { auto = false; nextLine(); }"
+    @choose="(v) => nextLine(v)"
+    @animation-finished="scheduleAuto"
+    :loading="loading || preloading"
+    :history="showingHistory"
+    :text-height="showingHistory ? 'calc(100vh - 6em - 24px)' : undefined"
+    :has-prev-story="hasPrevStory"
+    :has-next-story="hasNextStory"
+    @prev-story="$emit('prev-story')"
+    @next-story="$emit('next-story')"
+  >
+    <!-- Кнопки, которые попадают в слот (верхняя панель) -->
     <button v-if="menuButton" @click="emit('menu')">
       <menu-filled></menu-filled><span>Меню</span>
     </button>
@@ -247,7 +262,8 @@ onUnmounted(() => {
       <input v-if="auto" type="range" min="1" max="10" v-model="autoSpeed" />
     </div>
 
-    <!-- Кнопки навигации по сценам (в самом конце справа) -->
+    <!-- Кнопки навигации (будут в верхней панели на десктопе,
+         но в StoryScene они продублированы внизу для мобильных) -->
     <button v-if="hasPrevStory" @click="$emit('prev-story')">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
         <path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z" fill="currentColor" />
