@@ -118,17 +118,27 @@ watch(() => props.history, (history) => {
 
 <template>
   <div class="story-background" :class="classes">
-    <!-- Верхняя панель кнопок (для десктопа) -->
-    <div class="button-slot desktop-only" v-show="!history">
+    <!-- Верхняя панель кнопок (для десктопа и мобильных) -->
+    <div class="button-slot" v-show="!history">
+      <!-- Слот для кнопок из родительского компонента (Меню, Текст, История, Авто) -->
       <slot></slot>
-      <!-- Кнопки навигации ТОЛЬКО ДЛЯ ДЕСКТОПА -->
-      <button v-if="hasPrevStory" @click.stop="$emit('prev-story')" class="nav-btn">
+
+      <!-- Кнопки навигации для десктопа (скрываются на мобильных через CSS) -->
+      <button
+        v-if="hasPrevStory"
+        @click.stop="$emit('prev-story')"
+        class="nav-btn desktop-nav"
+      >
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
           <path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z" fill="currentColor"/>
         </svg>
         <span>назад</span>
       </button>
-      <button v-if="hasNextStory" @click.stop="$emit('next-story')" class="nav-btn">
+      <button
+        v-if="hasNextStory"
+        @click.stop="$emit('next-story')"
+        class="nav-btn desktop-nav"
+      >
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
           <path d="M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8z" fill="currentColor"/>
         </svg>
@@ -136,12 +146,12 @@ watch(() => props.history, (history) => {
       </button>
     </div>
 
-    <!-- Мобильная навигация (кнопки внизу) -->
+    <!-- Мобильная навигация (только на мобильных) -->
     <div class="mobile-nav" v-if="!history && (hasPrevStory || hasNextStory)">
       <button
         v-if="hasPrevStory"
         @click.stop="$emit('prev-story')"
-        @touchstart.stop="$emit('prev-story')"
+        @touchstart.prevent
         class="mobile-nav-btn prev"
       >
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
@@ -153,7 +163,7 @@ watch(() => props.history, (history) => {
       <button
         v-if="hasNextStory"
         @click.stop="$emit('next-story')"
-        @touchstart.stop="$emit('next-story')"
+        @touchstart.prevent
         class="mobile-nav-btn next"
       >
         <span>далее</span>
@@ -245,6 +255,7 @@ watch(() => props.history, (history) => {
   height: 45px;
   position: relative;
   filter: drop-shadow(1px 1px 1px #fff8);
+  cursor: pointer;
 }
 
 .story-background .button-slot button.toggled {
@@ -278,6 +289,7 @@ watch(() => props.history, (history) => {
   right: 0;
   bottom: 0;
   padding-right: 3px;
+  font-size: 0.8em;
 }
 
 .story-background .background-image,
@@ -329,6 +341,7 @@ watch(() => props.history, (history) => {
   background-color: #0006;
   color: white;
   border: 1px solid #fdb300c0;
+  cursor: pointer;
 }
 
 .story .options button::before {
@@ -490,54 +503,59 @@ watch(() => props.history, (history) => {
 
 /* ========== МОБИЛЬНАЯ АДАПТАЦИЯ ========== */
 @media (max-width: 768px) {
-  /* Скрываем десктопные кнопки */
-  .desktop-only {
+  /* Скрываем десктопные кнопки навигации */
+  .desktop-nav {
     display: none !important;
   }
 
-  /* Адаптация диалогового окна */
-  .dialog {
-    max-width: 95%;
-    min-height: 4em;
-    margin-bottom: 80px;
-    font-size: 0.85em;
-    clip-path: polygon(0 0, 0 100%, 100% 100%, 100% 12px, 200px 12px, 185px 0);
-    z-index: 10;
+  /* Адаптируем верхние кнопки для мобильных */
+  .story-background .button-slot {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    margin: 0;
+    padding: 8px 10px;
+    background: rgba(0, 0, 0, 0.9);
+    backdrop-filter: blur(10px);
+    z-index: 1000;
+    flex-wrap: wrap;
+    justify-content: flex-start;
+    border-bottom: 1px solid rgba(255, 215, 0, 0.3);
   }
 
-  .dialog .text {
-    height: 4em !important;
-    font-size: 0.95em;
-    margin: 0.3em 0.8em 0.8em 0.8em;
+  .story-background .button-slot button {
+    width: 50px;
+    height: 40px;
+    margin: 0 4px !important;
+    background: rgba(30, 30, 30, 0.8);
+    border: 1px solid rgba(255, 255, 255, 0.2);
   }
 
-  .narrator-box {
-    height: 20px;
+  .story-background .button-slot button > svg {
+    width: 24px;
+    height: 24px;
   }
 
-  .narrator-box .narrator {
-    height: 20px;
-    font-size: 0.9em;
+  .story-background .button-slot button > span {
+    font-size: 0.7em;
+    padding-right: 2px;
   }
 
-  .narrator-box .narrator span {
-    font-size: 1em;
-    margin-left: 0.5em;
+  /* Специально для кнопки Авто и её ползунка */
+  .auto-speed {
+    margin-left: 5px;
+    height: 40px;
+    width: 70px;
   }
 
-  .narrator-box .narrator-corner {
-    height: 20px;
-    width: calc(100% - 180px);
-  }
-
-  /* Обеспечиваем видимость контента */
+  /* Добавляем отступ для контента, чтобы не перекрывать кнопками */
   .story {
-    overflow-y: auto;
-    -webkit-overflow-scrolling: touch;
-    padding-bottom: 90px;
+    padding-top: 60px !important;
+    padding-bottom: 80px !important;
   }
 
-  /* Мобильная навигация */
+  /* Мобильная навигация внизу */
   .mobile-nav {
     position: fixed;
     bottom: 15px;
@@ -564,9 +582,10 @@ watch(() => props.history, (history) => {
     font-size: 16px;
     font-weight: 500;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-    transition: all 0.2s;
     min-width: 110px;
     justify-content: center;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
   }
 
   .mobile-nav-btn:active {
@@ -589,27 +608,44 @@ watch(() => props.history, (history) => {
     fill: gold;
   }
 
-  /* Уменьшаем загрузочный спиннер */
-  .story-background .loading-spinner {
-    width: 2.5em;
-    height: 2.5em;
-    margin: 0.5em;
-    z-index: 1001;
+  /* Исправление для модального окна */
+  .n-drawer {
+    z-index: 10000 !important;
+    background-color: #1a1a1a !important;
+  }
+
+  .n-drawer-mask {
+    z-index: 9999 !important;
+    background-color: rgba(0, 0, 0, 0.7) !important;
+  }
+
+  .n-drawer-content {
+    z-index: 10001 !important;
+    background-color: #1a1a1a !important;
+  }
+
+  .n-drawer-body {
+    height: 100% !important;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch;
   }
 }
 
 /* Для очень маленьких экранов */
 @media (max-width: 480px) {
-  .dialog {
-    font-size: 0.75em;
-    min-height: 3.5em;
-    margin-bottom: 70px;
-    clip-path: polygon(0 0, 0 100%, 100% 100%, 100% 10px, 160px 10px, 145px 0);
+  .story-background .button-slot button {
+    width: 45px;
+    height: 36px;
   }
 
-  .dialog .text {
-    height: 3.5em !important;
-    margin: 0.2em 0.5em 0.5em 0.5em;
+  .story-background .button-slot button > svg {
+    width: 20px;
+    height: 20px;
+  }
+
+  .story {
+    padding-top: 55px !important;
+    padding-bottom: 70px !important;
   }
 
   .mobile-nav-btn {
@@ -622,27 +658,17 @@ watch(() => props.history, (history) => {
     width: 18px;
     height: 18px;
   }
-
-  .story {
-    padding-bottom: 80px;
-  }
 }
 
 /* Альбомная ориентация на мобильных */
 @media (max-width: 768px) and (orientation: landscape) {
   .dialog {
     max-width: 70%;
-    font-size: 0.8em;
-    margin-bottom: 70px;
-    clip-path: polygon(0 0, 0 100%, 100% 100%, 100% 12px, 200px 12px, 185px 0);
-  }
-
-  .dialog .text {
-    height: 3.5em !important;
+    margin-bottom: 60px;
   }
 
   .story {
-    padding-bottom: 70px;
+    padding-bottom: 60px;
   }
 
   .mobile-nav {
