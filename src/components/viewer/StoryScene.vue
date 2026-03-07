@@ -114,51 +114,29 @@ watch(() => props.history, (history) => {
     });
   }
 });
-
-// Обработчики для мобильных кнопок
-function handlePrevClick() {
-  emit('prev-story');
-}
-
-function handleNextClick() {
-  emit('next-story');
-}
 </script>
 
 <template>
   <div class="story-background" :class="classes">
-    <!-- Верхняя панель кнопок (только Меню, Текст, История, Авто) -->
-    <div class="button-slot desktop-only" v-show="!history">
+    <!-- Верхняя панель кнопок (все кнопки здесь) -->
+    <div class="button-slot" v-show="!history">
       <slot></slot>
-      <!-- Верхние кнопки навигации УДАЛЕНЫ -->
-    </div>
-
-    <!-- Мобильная навигация (кнопки внизу) -->
-    <div class="mobile-nav" v-if="!history && (hasPrevStory || hasNextStory)">
-      <button
-        v-if="hasPrevStory"
-        @click.stop="handlePrevClick"
-        @touchstart.prevent
-        class="mobile-nav-btn prev"
-      >
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="22" height="22">
+      <!-- Кнопки навигации (всегда сверху) -->
+      <button v-if="hasPrevStory" @click.stop="$emit('prev-story')" class="nav-btn">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
           <path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z" fill="currentColor"/>
         </svg>
         <span>назад</span>
       </button>
-
-      <button
-        v-if="hasNextStory"
-        @click.stop="handleNextClick"
-        @touchstart.prevent
-        class="mobile-nav-btn next"
-      >
-        <span>далее</span>
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="22" height="22">
+      <button v-if="hasNextStory" @click.stop="$emit('next-story')" class="nav-btn">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
           <path d="M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8z" fill="currentColor"/>
         </svg>
+        <span>далее</span>
       </button>
     </div>
+
+    <!-- Мобильная навигация ПОЛНОСТЬЮ УДАЛЕНА -->
 
     <!-- Основной контент -->
     <div class="background-image">
@@ -490,11 +468,6 @@ function handleNextClick() {
 
 /* ========== МОБИЛЬНАЯ АДАПТАЦИЯ ========== */
 @media (max-width: 768px) {
-  /* Показываем верхние кнопки на мобильных */
-  .desktop-only {
-    display: flex !important;
-  }
-
   /* Адаптируем верхние кнопки под мобильные */
   .story-background .button-slot {
     position: fixed;
@@ -595,49 +568,9 @@ function handleNextClick() {
     padding: 0 !important;
   }
 
-  /* Нижняя навигация */
+  /* Убираем нижнюю навигацию */
   .mobile-nav {
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    display: flex;
-    justify-content: space-between;
-    padding: 15px 20px;
-    background: rgba(0, 0, 0, 0.95);
-    backdrop-filter: blur(10px);
-    z-index: 1000;
-    border-top: 2px solid gold;
-    height: 70px;
-    box-sizing: border-box;
-  }
-
-  .mobile-nav-btn {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 10px 25px;
-    background: rgba(255, 215, 0, 0.15);
-    border: 1px solid gold;
-    border-radius: 40px;
-    color: white;
-    font-size: 16px;
-    font-weight: bold;
-    min-width: 120px;
-    justify-content: center;
-    cursor: pointer;
-    transition: all 0.2s;
-  }
-
-  .mobile-nav-btn:active {
-    transform: scale(0.95);
-    background: rgba(255, 215, 0, 0.3);
-  }
-
-  .mobile-nav-btn svg {
-    width: 22px;
-    height: 22px;
-    fill: gold;
+    display: none !important;
   }
 
   /* Убираем лишние элементы */
@@ -659,23 +592,10 @@ function handleNextClick() {
     height: 18px;
   }
 
-  .mobile-nav-btn {
-    padding: 8px 20px;
-    min-width: 100px;
-    font-size: 14px;
-  }
-
   .dialog {
     bottom: 10em;
     max-height: calc(100vh - 180px);
     font-size: 0.85em;
-  }
-}
-
-/* Десктоп: скрываем мобильную навигацию */
-@media (min-width: 769px) {
-  .mobile-nav {
-    display: none;
   }
 }
 </style>
