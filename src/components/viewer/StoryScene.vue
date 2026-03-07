@@ -136,8 +136,6 @@ watch(() => props.history, (history) => {
       </button>
     </div>
 
-    <!-- Мобильная навигация ПОЛНОСТЬЮ УДАЛЕНА -->
-
     <!-- Основной контент -->
     <div class="background-image">
       <img v-show="backgroundUrl.endsWith('/') ? '' : backgroundUrl"
@@ -518,10 +516,10 @@ watch(() => props.history, (history) => {
     height: 20px;
   }
 
-  /* Адаптация диалогового окна */
+  /* Адаптация диалогового окна - ИЗМЕНЕНО bottom с 10em/11em на 4em */
   .dialog {
     position: fixed;
-    bottom: 11em;
+    bottom: 4em;
     left: 10px;
     right: 10px;
     width: auto;
@@ -568,7 +566,14 @@ watch(() => props.history, (history) => {
     padding: 0 !important;
   }
 
-  /* Убираем нижнюю навигацию */
+  /* Сдвиг спрайтов вниз на 20px */
+  .sprite-frame,
+  .sprite-image-view,
+  [class*="sprite"] {
+    transform: translateY(20px) !important;
+  }
+
+  /* Убираем нижнюю навигацию если она есть */
   .mobile-nav {
     display: none !important;
   }
@@ -593,7 +598,7 @@ watch(() => props.history, (history) => {
   }
 
   .dialog {
-    bottom: 10em;
+    bottom: 3.5em; /* чуть меньше на очень маленьких экранах */
     max-height: calc(100vh - 180px);
     font-size: 0.85em;
   }
