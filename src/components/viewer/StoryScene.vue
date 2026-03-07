@@ -118,52 +118,19 @@ watch(() => props.history, (history) => {
 // Обработчики для мобильных кнопок
 function handlePrevClick() {
   emit('prev-story');
-
-  // Дополнительно ищем верхнюю кнопку для надёжности
-  setTimeout(() => {
-    const topPrev = Array.from(document.querySelectorAll('button')).find(
-      btn => btn.textContent?.trim() === 'назад' &&
-             btn.classList.contains('desktop-nav')
-    );
-    if (topPrev) {
-      topPrev.click();
-    }
-  }, 10);
 }
 
 function handleNextClick() {
   emit('next-story');
-
-  setTimeout(() => {
-    const topNext = Array.from(document.querySelectorAll('button')).find(
-      btn => btn.textContent?.trim() === 'далее' &&
-             btn.classList.contains('desktop-nav')
-    );
-    if (topNext) {
-      topNext.click();
-    }
-  }, 10);
 }
 </script>
 
 <template>
   <div class="story-background" :class="classes">
-    <!-- Верхняя панель кнопок (для десктопа) -->
+    <!-- Верхняя панель кнопок (только Меню, Текст, История, Авто) -->
     <div class="button-slot desktop-only" v-show="!history">
       <slot></slot>
-      <!-- Кнопки навигации ТОЛЬКО ДЛЯ ДЕСКТОПА -->
-      <button v-if="hasPrevStory" @click.stop="$emit('prev-story')" class="nav-btn">
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
-          <path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z" fill="currentColor"/>
-        </svg>
-        <span>назад</span>
-      </button>
-      <button v-if="hasNextStory" @click.stop="$emit('next-story')" class="nav-btn">
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
-          <path d="M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8z" fill="currentColor"/>
-        </svg>
-        <span>далее</span>
-      </button>
+      <!-- Верхние кнопки навигации УДАЛЕНЫ -->
     </div>
 
     <!-- Мобильная навигация (кнопки внизу) -->
@@ -174,7 +141,7 @@ function handleNextClick() {
         @touchstart.prevent
         class="mobile-nav-btn prev"
       >
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="22" height="22">
           <path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z" fill="currentColor"/>
         </svg>
         <span>назад</span>
@@ -187,7 +154,7 @@ function handleNextClick() {
         class="mobile-nav-btn next"
       >
         <span>далее</span>
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="22" height="22">
           <path d="M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8z" fill="currentColor"/>
         </svg>
       </button>
