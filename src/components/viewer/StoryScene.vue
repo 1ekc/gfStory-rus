@@ -114,31 +114,51 @@ watch(() => props.history, (history) => {
     });
   }
 });
+
+// Обработчики для мобильных кнопок
+function handlePrevClick() {
+  emit('prev-story');
+
+  // Дополнительно ищем верхнюю кнопку для надёжности
+  setTimeout(() => {
+    const topPrev = Array.from(document.querySelectorAll('button')).find(
+      btn => btn.textContent?.trim() === 'назад' &&
+             btn.classList.contains('desktop-nav')
+    );
+    if (topPrev) {
+      topPrev.click();
+    }
+  }, 10);
+}
+
+function handleNextClick() {
+  emit('next-story');
+
+  setTimeout(() => {
+    const topNext = Array.from(document.querySelectorAll('button')).find(
+      btn => btn.textContent?.trim() === 'далее' &&
+             btn.classList.contains('desktop-nav')
+    );
+    if (topNext) {
+      topNext.click();
+    }
+  }, 10);
+}
 </script>
 
 <template>
   <div class="story-background" :class="classes">
-    <!-- Верхняя панель кнопок (для десктопа и мобильных) -->
-    <div class="button-slot" v-show="!history">
-      <!-- Слот для кнопок из родительского компонента (Меню, Текст, История, Авто) -->
+    <!-- Верхняя панель кнопок (для десктопа) -->
+    <div class="button-slot desktop-only" v-show="!history">
       <slot></slot>
-
-      <!-- Кнопки навигации для десктопа (скрываются на мобильных через CSS) -->
-      <button
-        v-if="hasPrevStory"
-        @click.stop="$emit('prev-story')"
-        class="nav-btn desktop-nav"
-      >
+      <!-- Кнопки навигации ТОЛЬКО ДЛЯ ДЕСКТОПА -->
+      <button v-if="hasPrevStory" @click.stop="$emit('prev-story')" class="nav-btn">
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
           <path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z" fill="currentColor"/>
         </svg>
         <span>назад</span>
       </button>
-      <button
-        v-if="hasNextStory"
-        @click.stop="$emit('next-story')"
-        class="nav-btn desktop-nav"
-      >
+      <button v-if="hasNextStory" @click.stop="$emit('next-story')" class="nav-btn">
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
           <path d="M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8z" fill="currentColor"/>
         </svg>
@@ -146,11 +166,11 @@ watch(() => props.history, (history) => {
       </button>
     </div>
 
-    <!-- Мобильная навигация (только на мобильных) -->
+    <!-- Мобильная навигация (кнопки внизу) -->
     <div class="mobile-nav" v-if="!history && (hasPrevStory || hasNextStory)">
       <button
         v-if="hasPrevStory"
-        @click.stop="$emit('prev-story')"
+        @click.stop="handlePrevClick"
         @touchstart.prevent
         class="mobile-nav-btn prev"
       >
@@ -162,7 +182,7 @@ watch(() => props.history, (history) => {
 
       <button
         v-if="hasNextStory"
-        @click.stop="$emit('next-story')"
+        @click.stop="handleNextClick"
         @touchstart.prevent
         class="mobile-nav-btn next"
       >
@@ -503,12 +523,12 @@ watch(() => props.history, (history) => {
 
 /* ========== МОБИЛЬНАЯ АДАПТАЦИЯ ========== */
 @media (max-width: 768px) {
-  /* Скрываем десктопные кнопки навигации */
-  .desktop-nav {
-    display: none !important;
+  /* Показываем верхние кнопки на мобильных */
+  .desktop-only {
+    display: flex !important;
   }
 
-  /* Адаптируем верхние кнопки для мобильных */
+  /* Адаптируем верхние кнопки под мобильные */
   .story-background .button-slot {
     position: fixed;
     top: 0;
@@ -525,16 +545,16 @@ watch(() => props.history, (history) => {
   }
 
   .story-background .button-slot button {
-    width: 50px;
-    height: 40px;
+    width: 45px;
+    height: 38px;
     margin: 0 4px !important;
     background: rgba(30, 30, 30, 0.8);
     border: 1px solid rgba(255, 255, 255, 0.2);
   }
 
   .story-background .button-slot button > svg {
-    width: 24px;
-    height: 24px;
+    width: 22px;
+    height: 22px;
   }
 
   .story-background .button-slot button > span {
@@ -545,61 +565,106 @@ watch(() => props.history, (history) => {
   /* Специально для кнопки Авто и её ползунка */
   .auto-speed {
     margin-left: 5px;
-    height: 40px;
+    height: 38px;
     width: 70px;
   }
 
-  /* Добавляем отступ для контента, чтобы не перекрывать кнопками */
-  .story {
-    padding-top: 60px !important;
-    padding-bottom: 80px !important;
+  .auto-speed > span {
+    font-size: 0.7em;
+    top: -2px;
   }
 
-  /* Мобильная навигация внизу */
+  .auto-speed > input {
+    height: 20px;
+  }
+
+  /* Адаптация диалогового окна */
+  .dialog {
+    position: fixed;
+    bottom: 11em;
+    left: 10px;
+    right: 10px;
+    width: auto;
+    max-width: none;
+    min-height: 100px;
+    max-height: calc(100vh - 200px);
+    margin: 0;
+    font-size: 0.9em;
+    clip-path: polygon(0 0, 0 100%, 100% 100%, 100% 12px, 200px 12px, 185px 0);
+    overflow-y: auto;
+  }
+
+  .dialog .text {
+    height: auto !important;
+    max-height: none !important;
+    min-height: 100px;
+    font-size: 1em;
+    margin: 0.5em 0.8em 0.8em 0.8em;
+    overflow-y: visible;
+  }
+
+  .narrator-box {
+    height: 20px;
+  }
+
+  .narrator-box .narrator {
+    height: 20px;
+    font-size: 0.9em;
+  }
+
+  .narrator-box .narrator span {
+    font-size: 1em;
+    margin-left: 0.5em;
+  }
+
+  .narrator-box .narrator-corner {
+    height: 20px;
+    width: calc(100% - 180px);
+  }
+
+  /* Убираем скролл с story */
+  .story {
+    overflow: hidden !important;
+    padding: 0 !important;
+  }
+
+  /* Нижняя навигация */
   .mobile-nav {
     position: fixed;
-    bottom: 15px;
+    bottom: 0;
     left: 0;
     right: 0;
     display: flex;
     justify-content: space-between;
-    padding: 0 15px;
+    padding: 15px 20px;
+    background: rgba(0, 0, 0, 0.95);
+    backdrop-filter: blur(10px);
     z-index: 1000;
-    pointer-events: none;
+    border-top: 2px solid gold;
+    height: 70px;
+    box-sizing: border-box;
   }
 
   .mobile-nav-btn {
-    pointer-events: auto;
     display: flex;
     align-items: center;
     gap: 8px;
-    padding: 12px 20px;
-    background: rgba(30, 30, 30, 0.9);
-    backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 215, 0, 0.5);
-    border-radius: 30px;
+    padding: 10px 25px;
+    background: rgba(255, 215, 0, 0.15);
+    border: 1px solid gold;
+    border-radius: 40px;
     color: white;
     font-size: 16px;
-    font-weight: 500;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-    min-width: 110px;
+    font-weight: bold;
+    min-width: 120px;
     justify-content: center;
     cursor: pointer;
-    -webkit-tap-highlight-color: transparent;
+    transition: all 0.2s;
   }
 
   .mobile-nav-btn:active {
     transform: scale(0.95);
-    background: rgba(50, 50, 50, 0.9);
-    border-color: gold;
-  }
-
-  .mobile-nav-btn.prev {
-    margin-right: auto;
-  }
-
-  .mobile-nav-btn.next {
-    margin-left: auto;
+    background: rgba(255, 215, 0, 0.3);
   }
 
   .mobile-nav-btn svg {
@@ -608,77 +673,35 @@ watch(() => props.history, (history) => {
     fill: gold;
   }
 
-  /* Исправление для модального окна */
-  .n-drawer {
-    z-index: 10000 !important;
-    background-color: #1a1a1a !important;
-  }
-
-  .n-drawer-mask {
-    z-index: 9999 !important;
-    background-color: rgba(0, 0, 0, 0.7) !important;
-  }
-
-  .n-drawer-content {
-    z-index: 10001 !important;
-    background-color: #1a1a1a !important;
-  }
-
-  .n-drawer-body {
-    height: 100% !important;
-    overflow-y: auto !important;
-    -webkit-overflow-scrolling: touch;
+  /* Убираем лишние элементы */
+  .story-background .loading-spinner {
+    bottom: 90px;
+    right: 10px;
   }
 }
 
 /* Для очень маленьких экранов */
 @media (max-width: 480px) {
   .story-background .button-slot button {
-    width: 45px;
-    height: 36px;
+    width: 40px;
+    height: 34px;
   }
 
   .story-background .button-slot button > svg {
-    width: 20px;
-    height: 20px;
-  }
-
-  .story {
-    padding-top: 55px !important;
-    padding-bottom: 70px !important;
-  }
-
-  .mobile-nav-btn {
-    padding: 10px 16px;
-    min-width: 95px;
-    font-size: 14px;
-  }
-
-  .mobile-nav-btn svg {
     width: 18px;
     height: 18px;
   }
-}
-
-/* Альбомная ориентация на мобильных */
-@media (max-width: 768px) and (orientation: landscape) {
-  .dialog {
-    max-width: 70%;
-    margin-bottom: 60px;
-  }
-
-  .story {
-    padding-bottom: 60px;
-  }
-
-  .mobile-nav {
-    bottom: 10px;
-  }
 
   .mobile-nav-btn {
-    padding: 8px 14px;
-    min-width: 90px;
-    font-size: 13px;
+    padding: 8px 20px;
+    min-width: 100px;
+    font-size: 14px;
+  }
+
+  .dialog {
+    bottom: 10em;
+    max-height: calc(100vh - 180px);
+    font-size: 0.85em;
   }
 }
 
