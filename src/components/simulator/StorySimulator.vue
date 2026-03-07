@@ -24,6 +24,7 @@ const html = ref('');
 const loading = ref(false);
 const storyList = ref<{value: string, label: string}[]>([]);
 const currentStoryIndex = ref(0);
+const storyListLoaded = ref(false);
 
 async function switchStory(path: string) {
   loading.value = true;
@@ -55,7 +56,6 @@ const showMenu = ref(false);
 const value = ref('');
 const menu = ref<MenuInst>();
 
-// Обновление текущего индекса при смене сцены
 function updateCurrentIndex(file: string) {
   const index = storyList.value.findIndex(s => s.value === file);
   if (index !== -1) {
@@ -63,22 +63,19 @@ function updateCurrentIndex(file: string) {
   }
 }
 
-// Переход к следующей сцене в списке
 function nextStory() {
-  if (currentStoryIndex.value < storyList.value.length - 1) {
+  if (storyListLoaded.value && currentStoryIndex.value < storyList.value.length - 1) {
     value.value = storyList.value[currentStoryIndex.value + 1].value;
   }
 }
 
-// Переход к предыдущей сцене в списке
 function prevStory() {
-  if (currentStoryIndex.value > 0) {
+  if (storyListLoaded.value && currentStoryIndex.value > 0) {
     value.value = storyList.value[currentStoryIndex.value - 1].value;
   }
 }
 
 function onStoryEnded() {
-  // Автоматически переходим к следующей сцене
   nextStory();
 }
 
@@ -107,19 +104,18 @@ function updateFromLocation() {
   }
 }
 
-// Загрузка списка сцен из chapter-order.json
 async function loadStoryList() {
   try {
     const response = await fetch('/chapter-order.json');
     const orderList = await response.json();
 
-    // Преобразуем массив в нужный формат
     storyList.value = orderList.map((fileName: string) => ({
       value: fileName,
       label: fileName
     }));
 
-    // Восстановление прогресса
+    storyListLoaded.value = true;
+
     const savedProgress = localStorage.getItem('storyProgress');
     if (savedProgress && storyList.value.some(s => s.value === savedProgress)) {
       value.value = savedProgress;
@@ -128,7 +124,6 @@ async function loadStoryList() {
     }
   } catch (e) {
     console.error('Error loading chapter order:', e);
-    // Запасной вариант - загружаем из stories.json
     try {
       const response = await fetch('/stories/stories.json');
       const data = await response.json();
@@ -136,6 +131,8 @@ async function loadStoryList() {
         value: key,
         label: key
       })).sort((a, b) => a.value.localeCompare(b.value));
+
+      storyListLoaded.value = true;
 
       const savedProgress = localStorage.getItem('storyProgress');
       if (savedProgress && storyList.value.some(s => s.value === savedProgress)) {
@@ -145,24 +142,41 @@ async function loadStoryList() {
       }
     } catch (e2) {
       console.error('Error loading story list:', e2);
-      // Последний запасной вариант
       storyList.value = [
         { value: "0-1-1.txt", label: "0-1-1.txt" },
         { value: "0-1-2.txt", label: "0-1-2.txt" },
         { value: "0-2-1.txt", label: "0-2-1.txt" },
       ];
+      storyListLoaded.value = true;
       value.value = storyList.value[0].value;
     }
   }
 }
 
+watch(storyListLoaded, (loaded) => {
+  if (loaded && value.value) {
+    updateCurrentIndex(value.value);
+  }
+});
+
+watch(storyList, (newList) => {
+  if (newList.length > 0 && value.value) {
+    updateCurrentIndex(value.value);
+  }
+});
+
 const width = ref(window.innerWidth);
 onMounted(() => {
   loadStoryList();
   updateFromLocation();
-  window.addEventListener('popstate', () => {
-    updateFromLocation();
-  });
+
+  setTimeout(() => {
+    if (storyListLoaded.value && value.value) {
+      updateCurrentIndex(value.value);
+    }
+  }, 500);
+
+  window.addEventListener('popstate', updateFromLocation);
   window.addEventListener('resize', () => {
     width.value = window.innerWidth;
   });
@@ -170,13 +184,15 @@ onMounted(() => {
 
 const showText = ref(false);
 
-// Вычисляем наличие предыдущей/следующей сцены
-const hasPrevStory = computed(() =>
-  storyList.value.length > 0 && currentStoryIndex.value > 0
-);
-const hasNextStory = computed(() =>
-  storyList.value.length > 0 && currentStoryIndex.value < storyList.value.length - 1
-);
+const hasPrevStory = computed(() => {
+  if (!storyListLoaded.value || storyList.value.length === 0) return false;
+  return currentStoryIndex.value > 0;
+});
+
+const hasNextStory = computed(() => {
+  if (!storyListLoaded.value || storyList.value.length === 0) return false;
+  return currentStoryIndex.value < storyList.value.length - 1;
+});
 </script>
 
 <template>
