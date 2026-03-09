@@ -7,3 +7,6 @@
     url = https://github.com/1ekc/gf-data-rus.git
     branch = main
     update = rebase
+[submodule "gf-data-rus"]
+	path = gf-data-rus
+	url = https://github.com/1ekc/gf-data-rus.git
