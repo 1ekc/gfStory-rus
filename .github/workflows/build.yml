@@ -52,37 +52,42 @@ jobs:
       - name: Install Dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y --fix-missing ffmpeg pngquant libfuse2
+          sudo apt-get install -y --fix-missing ffmpeg pngquant libfuse2 build-essential
 
-          # Удаляем ImageMagick 6 (если установлен)
-          sudo apt-get remove -y imagemagick imagemagick-6-common imagemagick-6.q16 2>/dev/null || true
+          # Удаляем старый ImageMagick 6
+          sudo apt-get remove -y imagemagick imagemagick-6-common 2>/dev/null || true
+          sudo apt-get autoremove -y
 
-          # Устанавливаем ImageMagick 7
-          sudo apt-get install -y imagemagick-7.q16
+          # Скачиваем и собираем ImageMagick 7 из исходников
+          cd /tmp
+          wget https://imagemagick.org/archive/ImageMagick-7.1.1-38.tar.xz
+          tar -xf ImageMagick-7.1.1-38.tar.xz
+          cd ImageMagick-7.1.1-38
+          ./configure --prefix=/usr --disable-static --with-modules --without-perl
+          make -j$(nproc)
+          sudo make install
+          sudo ldconfig
+
+          # Возвращаемся в рабочий каталог
+          cd $GITHUB_WORKSPACE
 
           # Создаём bin директорию
           mkdir -p bin
 
-          # Создаём ссылку на magick (ImageMagick 7)
-          sudo ln -sf /usr/bin/magick-im7.q16 /usr/local/bin/magick
-          ln -sf /usr/bin/magick-im7.q16 bin/magick
+          # Создаём ссылку на magick
+          ln -sf /usr/bin/magick bin/magick
 
-          # Скачиваем и устанавливаем vgmstream
+          # Устанавливаем vgmstream
           wget https://github.com/vgmstream/vgmstream-releases/releases/download/nightly/vgmstream-linux-cli.tar.gz
           tar -zxf vgmstream-linux-cli.tar.gz
           mv vgmstream-cli bin/
 
-          # Делаем все бинарники исполняемыми
+          # Делаем исполняемыми
           chmod a+x bin/*
-          chmod a+x /usr/local/bin/magick
 
-          # Проверяем версии
-          echo "=== ImageMagick Version ==="
-          magick --version
-          echo "=== vgmstream Version ==="
-          ./bin/vgmstream-cli --version 2>&1 | head -5
+          # Проверяем версию
+          bin/magick --version
 
-          # Добавляем bin в PATH
           echo "${PWD}/bin" >> $GITHUB_PATH
       - name: Restore Cached Resources
         id: restore-gf-downloader-resources
