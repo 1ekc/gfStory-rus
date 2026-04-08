@@ -52,40 +52,37 @@ jobs:
       - name: Install Dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y --fix-missing ffmpeg pngquant imagemagick libfuse2
+          sudo apt-get install -y --fix-missing ffmpeg pngquant libfuse2
 
+          # Удаляем ImageMagick 6 (если установлен)
+          sudo apt-get remove -y imagemagick imagemagick-6-common imagemagick-6.q16 2>/dev/null || true
+
+          # Устанавливаем ImageMagick 7
+          sudo apt-get install -y imagemagick-7.q16
+
+          # Создаём bin директорию
+          mkdir -p bin
+
+          # Создаём ссылку на magick (ImageMagick 7)
+          sudo ln -sf /usr/bin/magick-im7.q16 /usr/local/bin/magick
+          ln -sf /usr/bin/magick-im7.q16 bin/magick
+
+          # Скачиваем и устанавливаем vgmstream
           wget https://github.com/vgmstream/vgmstream-releases/releases/download/nightly/vgmstream-linux-cli.tar.gz
           tar -zxf vgmstream-linux-cli.tar.gz
-          mkdir -p bin
           mv vgmstream-cli bin/
 
-          # Удаляем старый испорченный magick
-          rm -f bin/magick
+          # Делаем все бинарники исполняемыми
+          chmod a+x bin/*
+          chmod a+x /usr/local/bin/magick
 
-          # Создаём полную обёртку для magick
-          cat > bin/magick << 'EOF'
-          #!/bin/bash
-          # Поддерживаем команды: identify, convert, --help
-          case "$1" in
-            --help|-help)
-              exit 0
-              ;;
-            identify)
-              shift
-              exec identify "$@"
-              ;;
-            *)
-              exec convert "$@"
-              ;;
-          esac
-          EOF
+          # Проверяем версии
+          echo "=== ImageMagick Version ==="
+          magick --version
+          echo "=== vgmstream Version ==="
+          ./bin/vgmstream-cli --version 2>&1 | head -5
 
-          chmod +x bin/magick
-
-          # Проверяем
-          echo "Testing identify:"
-          echo 'Test' | bin/magick identify -version
-
+          # Добавляем bin в PATH
           echo "${PWD}/bin" >> $GITHUB_PATH
       - name: Restore Cached Resources
         id: restore-gf-downloader-resources
