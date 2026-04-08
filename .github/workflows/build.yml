@@ -54,57 +54,35 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y --fix-missing ffmpeg pngquant libfuse2 build-essential libtool libltdl-dev
 
-          # Полностью удаляем все версии ImageMagick
-          sudo apt-get remove -y imagemagick imagemagick-6-common imagemagick-6.q16 2>/dev/null || true
+          # Удаляем старые версии
+          sudo apt-get remove -y imagemagick imagemagick-6-common 2>/dev/null || true
           sudo apt-get autoremove -y
 
-          # Скачиваем и собираем ImageMagick 7.1.2-18
+          # Скачиваем и собираем ImageMagick 7
           cd /tmp
           wget https://github.com/ImageMagick/ImageMagick/archive/refs/tags/7.1.2-18.tar.gz
           tar -xzf 7.1.2-18.tar.gz
           cd ImageMagick-7.1.2-18
 
-          # Оптимальные флаги для стабильной работы
-          ./configure \
-            --prefix=/usr \
-            --disable-static \
-            --without-modules \
-            --without-perl \
-            --without-opencl \
-            --without-ltdl \
-            --without-freetype \
-            --without-fontconfig \
-            --without-x \
-            --without-xml
-
+          ./configure --prefix=/usr --disable-static --without-modules --without-perl --without-ltdl
           make -j$(nproc)
           sudo make install
           sudo ldconfig
 
-          # Создаём симлинки во всех возможных местах
-          sudo ln -sf /usr/bin/magick /usr/local/bin/magick
-          sudo ln -sf /usr/bin/magick /usr/bin/magick7
-
           cd $GITHUB_WORKSPACE
           mkdir -p bin
-          ln -sf /usr/bin/magick bin/magick
 
           # Устанавливаем vgmstream
           wget https://github.com/vgmstream/vgmstream-releases/releases/download/nightly/vgmstream-linux-cli.tar.gz
           tar -zxf vgmstream-linux-cli.tar.gz
           mv vgmstream-cli bin/
+          chmod +x bin/vgmstream-cli
 
-          chmod a+x bin/*
-
-          # Детальная проверка
-          echo "=== ImageMagick Installation Check ==="
-          which magick
+          # Проверяем системный magick
+          echo "=== ImageMagick 7 ==="
           magick --version
-          magick identify -version
-          echo "=== Test basic commands ==="
-          magick --help > /dev/null && echo "✓ magick --help works"
-          magick identify -version > /dev/null && echo "✓ magick identify works"
 
+          # Добавляем bin в PATH (но не для magick, он уже в системе)
           echo "${PWD}/bin" >> $GITHUB_PATH
       - name: Restore Cached Resources
         id: restore-gf-downloader-resources
