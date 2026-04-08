@@ -51,39 +51,68 @@ jobs:
           swap-storage: false
       - name: Install Dependencies
         run: |
+          # 1. Обновление и установка базовых пакетов
           sudo apt-get update
-          sudo apt-get install -y --fix-missing ffmpeg pngquant libfuse2 build-essential libtool libltdl-dev
+          sudo apt-get install -y --fix-missing \
+            ffmpeg pngquant libfuse2 \
+            build-essential libtool libltdl-dev \
+            libpng-dev libjpeg-dev libtiff-dev libwebp-dev \
+            libfreetype6-dev libfontconfig1-dev \
+            libxml2-dev libgomp1 \
+            wget tar
 
-          # Удаляем старые версии
-          sudo apt-get remove -y imagemagick imagemagick-6-common 2>/dev/null || true
+          # 2. Полное удаление остатков ImageMagick 6
+          sudo apt-get remove -y imagemagick imagemagick-6-common imagemagick-6.q16 2>/dev/null || true
           sudo apt-get autoremove -y
 
-          # Скачиваем и собираем ImageMagick 7
+          # 3. Сборка ImageMagick 7.1.2-18
           cd /tmp
           wget https://github.com/ImageMagick/ImageMagick/archive/refs/tags/7.1.2-18.tar.gz
           tar -xzf 7.1.2-18.tar.gz
           cd ImageMagick-7.1.2-18
 
-          ./configure --prefix=/usr --disable-static --without-modules --without-perl --without-ltdl
+          # Конфигурация со всеми необходимыми делегатами (без отключения критических опций)
+          ./configure \
+            --prefix=/usr \
+            --disable-static \
+            --with-png \
+            --with-jpeg \
+            --with-tiff \
+            --with-webp \
+            --with-freetype \
+            --with-fontconfig \
+            --with-xml \
+            --without-modules \
+            --without-perl \
+            --without-opencl
+
           make -j$(nproc)
           sudo make install
           sudo ldconfig
 
+          # 4. Проверка поддержки PNG
+          echo "=== Проверка делегатов ==="
+          magick identify -list format | grep -E "PNG|JPEG|TIFF"
+
+          # Создание тестового PNG
+          magick -size 10x10 xc:white test.png
+          magick identify test.png && echo "✓ PNG support OK" || echo "✗ PNG support FAILED"
+          rm -f test.png
+
+          # 5. Установка vgmstream
           cd $GITHUB_WORKSPACE
           mkdir -p bin
-
-          # Устанавливаем vgmstream
           wget https://github.com/vgmstream/vgmstream-releases/releases/download/nightly/vgmstream-linux-cli.tar.gz
           tar -zxf vgmstream-linux-cli.tar.gz
           mv vgmstream-cli bin/
           chmod +x bin/vgmstream-cli
 
-          # Проверяем системный magick
-          echo "=== ImageMagick 7 ==="
-          magick --version
-
-          # Добавляем bin в PATH (но не для magick, он уже в системе)
+          # 6. Добавление bin в PATH (для vgmstream)
           echo "${PWD}/bin" >> $GITHUB_PATH
+
+          # 7. Убедимся, что magick доступен (уже в /usr/bin)
+          which magick
+          magick --version
       - name: Restore Cached Resources
         id: restore-gf-downloader-resources
         uses: actions/cache/restore@v4
