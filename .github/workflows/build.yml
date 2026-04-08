@@ -82,7 +82,22 @@ jobs:
           chmod a+x bin/*
           echo "${PWD}/bin" >> $GITHUB_PATH
       - name: Fix ImageMagick
-        run: sudo ln -sf /usr/bin/convert /usr/local/bin/magick
+        run: |
+          sudo bash -c 'cat > /usr/local/bin/magick << "EOF"
+          #!/bin/bash
+          if [[ "$1" == "--help" ]] || [[ "$1" == "-help" ]] || [[ "$1" == "help" ]]; then
+            convert --help
+            exit 0
+          else
+            exec convert "$@"
+          fi
+          EOF'
+          sudo chmod +x /usr/local/bin/magick
+
+          # Проверяем
+          magick --help
+          echo "Exit code: $?"
+          magick --version
       - name: Restore Cached Resources
         id: restore-gf-downloader-resources
         uses: actions/cache/restore@v4
