@@ -81,6 +81,8 @@ jobs:
           
           chmod a+x bin/*
           echo "${PWD}/bin" >> $GITHUB_PATH
+      - name: Fix ImageMagick
+        run: sudo ln -sf /usr/bin/convert /usr/local/bin/magick
       - name: Restore Cached Resources
         id: restore-gf-downloader-resources
         uses: actions/cache/restore@v4
