@@ -59,27 +59,32 @@ jobs:
           mkdir -p bin
           mv vgmstream-cli bin/
 
-          # Удаляем испорченный magick
+          # Удаляем старый испорченный magick
           rm -f bin/magick
 
-          # Создаём bash-скрипт вместо ссылки
+          # Создаём полную обёртку для magick
           cat > bin/magick << 'EOF'
           #!/bin/bash
-          if [[ "$1" == "--help" ]] || [[ "$1" == "-help" ]] || [[ "$1" == "help" ]]; then
-            convert --help 2>&1 || exit 0
-            exit 0
-          else
-            exec convert "$@"
-          fi
+          # Поддерживаем команды: identify, convert, --help
+          case "$1" in
+            --help|-help)
+              exit 0
+              ;;
+            identify)
+              shift
+              exec identify "$@"
+              ;;
+            *)
+              exec convert "$@"
+              ;;
+          esac
           EOF
 
           chmod +x bin/magick
 
           # Проверяем
-          bin/magick --version
-          echo "Exit code: $?"
-          bin/magick --help
-          echo "Exit code: $?"
+          echo "Testing identify:"
+          echo 'Test' | bin/magick identify -version
 
           echo "${PWD}/bin" >> $GITHUB_PATH
       - name: Restore Cached Resources
