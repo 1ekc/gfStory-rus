@@ -58,9 +58,9 @@ jobs:
           sudo apt-get remove -y imagemagick imagemagick-6-common 2>/dev/null || true
           sudo apt-get autoremove -y
 
-          # Скачиваем и собираем ImageMagick 7 из исходников
+          # Скачиваем ImageMagick 7 из GitHub releases
           cd /tmp
-          wget https://imagemagick.org/archive/ImageMagick-7.1.1-38.tar.xz
+          wget https://github.com/ImageMagick/ImageMagick/releases/download/7.1.1-38/ImageMagick-7.1.1-38.tar.xz
           tar -xf ImageMagick-7.1.1-38.tar.xz
           cd ImageMagick-7.1.1-38
           ./configure --prefix=/usr --disable-static --with-modules --without-perl
@@ -85,7 +85,7 @@ jobs:
           # Делаем исполняемыми
           chmod a+x bin/*
 
-          # Проверяем версию
+          # Проверяем
           bin/magick --version
 
           echo "${PWD}/bin" >> $GITHUB_PATH
